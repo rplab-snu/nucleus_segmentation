@@ -83,6 +83,8 @@ class MyWindow(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.data_path = os.getcwd() + "\\inserted\\"
+        self._file_save()
         self._inserted_metal = None
         self.non_MA = Non_MA()
         self.metal = MA()
@@ -90,6 +92,14 @@ class MyWindow(QWidget):
 
         if os.path.exists(os.getcwd() + "\\inserted") is False:
             os.mkdir(os.getcwd() + "\\inserted")
+
+    # TODO : Change Method Name
+    def _file_save(self):
+        files = [os.path.basename(x)[:-4] for x in glob(self.data_path + "*")]
+        self.file_dict = {f[0]:{f[]} for f in files}
+        for f in files:
+            
+        print(files)
 
     def setupUI(self):
         self.setGeometry(600, 200, 768, 768)
@@ -200,6 +210,7 @@ class MyWindow(QWidget):
         ma_num = self.MA_path.text().split("\\")[-1][:-4]
         patient_num = self.non_MA_path.text().split("\\")[-1][:-4]
         path = os.getcwd() + "\\inserted\\" + patient_num + "_" + ma_num
+
         path_check = sorted(list(glob(path+"*")))
         if len(path_check) > 0:
             last_num = int(path_check[-1].split("_")[-1][:-4])

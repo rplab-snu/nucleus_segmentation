@@ -5,4 +5,8 @@ inserted/*
 *.png
 .vscode
 .vscode/*
+build
+build/*
+dist
+dist/*
 test.py

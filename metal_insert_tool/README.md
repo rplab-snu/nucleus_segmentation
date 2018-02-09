@@ -16,3 +16,10 @@ Save Image Button : Save numpy, and image file in `./inserted/` directory. File 
 
 ## 3. Make execute file
 
+>> not running
+Need Windows 10 SDK([Download Page]((https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk)<br>
+[VC++ Redistri](https://www.microsoft.com/en-US/download/details.aspx?id=48145)<br>
+
+> pyinstaller -F -w -p "C:\Program Files\Python36\Lib\site-packages\PyQt5\Qt\bin;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64" main.py
+
+

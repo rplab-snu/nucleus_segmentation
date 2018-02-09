@@ -201,10 +201,10 @@ class MyWindow(QWidget):
     def _set_file_cnt(self, non_ma_num, ma_num):
         non_ma_num = int(''.join(non_ma_num))
         ma_num = int(''.join(ma_num))
-        if non_ma_num not in self.file_dict.keys():
+        if self.file_dict.has_keys(non_ma_num):
             self.file_dict[non_ma_num] = {ma_num:0}
         else:
-            if ma_num not in self.file_dict[ma_num].keys():
+            if self.file_dict[non_ma_num].has_keys(ma_num):
                 self.file_dict[non_ma_num][ma_num] = 0
             else:
                 self.file_dict[non_ma_num][ma_num] += 1

@@ -40,7 +40,6 @@ class MA:
         self.old_path = None
         self.metal_cnt = 1
 
-
     def _get_metal_range(self, metal_img):
         metal_range = np.where(metal_img != 0)
         y_min, y_max = min(metal_range[0]), max(metal_range[0])
@@ -59,8 +58,8 @@ class MA:
             cliped_MA = self.origin_MA * flaged_MA
             if sum(sum(left_MA)) > 0 or sum(sum(right_MA)) > 0:
                 self.metal_cnt = 2
-                self._metal = self._get_metal_range(cliped_MA[:, 0:cliped_MA//2]) 
-                self._metal_r = self._get_metal_range(cliped_MA[:, cliped_MA//2: cliped_MA]) 
+                self._metal = self._get_metal_range(cliped_MA[:, 0:flaged_MA_X//2]) 
+                self._metal_r = self._get_metal_range(cliped_MA[:, flaged_MA_X//2: flaged_MA_X]) 
             else:               
                 self.metal_cnt = 1
                 self._metal = self._get_metal_range(cliped_MA)
@@ -83,13 +82,18 @@ class MyWindow(QWidget):
     def __init__(self):
         super().__init__()
 
+        if os.path.exists(os.getcwd() + "\\inserted") is False:
+            os.mkdir(os.getcwd() + "\\inserted")
+
+        self.data_path = os.getcwd() + "\\inserted\\"
+        files = [os.path.basename(x)[:-4].split("_") for x in glob(self.data_path + "*")]
+        self.file_dict = {int(f[0] + f[1]) : {int(f[2] + f[3]) : int(f[4])} for f in files}
+        
         self._inserted_metal = None
         self.non_MA = Non_MA()
         self.metal = MA()
+        
         self.setupUI()
-
-        if os.path.exists(os.getcwd() + "\\inserted") is False:
-            os.mkdir(os.getcwd() + "\\inserted")
 
     def setupUI(self):
         self.setGeometry(600, 200, 768, 768)
@@ -173,11 +177,9 @@ class MyWindow(QWidget):
         
     def input_imgs(self):
         non_MA_path, MA_path = self._get_path()
-        """
-        For Test
+        # For Test
         MA_path = r"C:\DW_Intern\DCM\01_MA_Image\15369989\15369989_0070.DCM"
         non_MA_path = r"C:\DW_Intern\DCM\03_Non_MA\15858650\15858650_0000.DCM"
-        """
         if self.non_MA is None or self.MA_path is None:
             return
         
@@ -196,17 +198,26 @@ class MyWindow(QWidget):
         self.ax.imshow(self._inserted_metal, cmap='gray')
         self.canvas.draw()
 
-    def save_img(self):
-        ma_num = self.MA_path.text().split("\\")[-1][:-4]
-        patient_num = self.non_MA_path.text().split("\\")[-1][:-4]
-        path = os.getcwd() + "\\inserted\\" + patient_num + "_" + ma_num
-        path_check = sorted(list(glob(path+"*")))
-        if len(path_check) > 0:
-            last_num = int(path_check[-1].split("_")[-1][:-4])
-            path += "_%04d"%(last_num + 1)
+    def _set_file_cnt(self, non_ma_num, ma_num):
+        non_ma_num = int(''.join(non_ma_num))
+        ma_num = int(''.join(ma_num))
+        if self.file_dict.has_keys(non_ma_num):
+            self.file_dict[non_ma_num] = {ma_num:0}
         else:
-            path += "_0000"
+            if self.file_dict[non_ma_num].has_keys(ma_num):
+                self.file_dict[non_ma_num][ma_num] = 0
+            else:
+                self.file_dict[non_ma_num][ma_num] += 1
+        return self.file_dict[non_ma_num][ma_num]
+
+    def save_img(self):
+        non_ma_num = self.non_MA_path.text().split("\\")[-1][:-4].split("_")
+        ma_num = self.MA_path.text().split("\\")[-1][:-4].split("_")
+
+        path_cnt = self._set_file_cnt(non_ma_num, ma_num)
+        path = "%s\\inserted\\%s_%s_%s_%s_%04d"%(os.getcwd(), *non_ma_num, *ma_num, path_cnt)
         print("Save Img : ", path)
+        
         np.save(path+".npy", self._inserted_metal)
         self.fig.savefig(path+".png")
         

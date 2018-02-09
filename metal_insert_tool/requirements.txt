@@ -1,0 +1,4 @@
+pydicom>=0.9.9
+matplotlib>=2.1.2
+PyQt5>=5.10
+

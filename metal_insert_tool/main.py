@@ -40,7 +40,6 @@ class MA:
         self.old_path = None
         self.metal_cnt = 1
 
-
     def _get_metal_range(self, metal_img):
         metal_range = np.where(metal_img != 0)
         y_min, y_max = min(metal_range[0]), max(metal_range[0])
@@ -83,23 +82,18 @@ class MyWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.data_path = os.getcwd() + "\\inserted\\"
-        self._file_save()
-        self._inserted_metal = None
-        self.non_MA = Non_MA()
-        self.metal = MA()
-        self.setupUI()
-
         if os.path.exists(os.getcwd() + "\\inserted") is False:
             os.mkdir(os.getcwd() + "\\inserted")
 
-    # TODO : Change Method Name
-    def _file_save(self):
-        files = [os.path.basename(x)[:-4] for x in glob(self.data_path + "*")]
-        self.file_dict = {f[0]:{f[]} for f in files}
-        for f in files:
-            
-        print(files)
+        self.data_path = os.getcwd() + "\\inserted\\"
+        files = [os.path.basename(x)[:-4].split("_") for x in glob(self.data_path + "*")]
+        self.file_dict = {int(f[0] + f[1]) : {int(f[2] + f[3]) : int(f[4])} for f in files}
+        
+        self._inserted_metal = None
+        self.non_MA = Non_MA()
+        self.metal = MA()
+        
+        self.setupUI()
 
     def setupUI(self):
         self.setGeometry(600, 200, 768, 768)
@@ -207,16 +201,13 @@ class MyWindow(QWidget):
         self.canvas.draw()
 
     def save_img(self):
-        ma_num = self.MA_path.text().split("\\")[-1][:-4]
-        patient_num = self.non_MA_path.text().split("\\")[-1][:-4]
-        path = os.getcwd() + "\\inserted\\" + patient_num + "_" + ma_num
+        non_ma_num = self.non_MA_path.text().split("\\")[-1][:-4].split("_")
+        ma_num = self.MA_path.text().split("\\")[-1][:-4].split("_")
 
-        path_check = sorted(list(glob(path+"*")))
-        if len(path_check) > 0:
-            last_num = int(path_check[-1].split("_")[-1][:-4])
-            path += "_%04d"%(last_num + 1)
-        else:
-            path += "_0000"
+        self.file_dict[int(sum(non_ma_num))][int(sum(ma_num))] += 1
+        path_cnt = self.file_dict[int(sum(non_ma_num))][int(sum(ma_num))]
+        path = "%s\\inserted\\%s_%s_%s_%s_%d"%(os.getcwd(), *non_ma_num, *ma_num, path_cnt)
+        print(path)
         print("Save Img : ", path)
         np.save(path+".npy", self._inserted_metal)
         self.fig.savefig(path+".png")

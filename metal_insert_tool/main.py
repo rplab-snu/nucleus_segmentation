@@ -197,10 +197,10 @@ class MyWindow(QWidget):
         # For Test
         MA_path = r"C:\DW_Intern\DCM\01_MA_Image\15369989\15369989_0070.DCM"
         non_MA_path = r"C:\DW_Intern\DCM\03_Non_MA\15858650\15858650_0000.DCM"
-
         MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\27178009_0230.DCM"
         non_MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\15858650_0059.DCM"
         """
+        
         if self.non_MA is None or self.MA_path is None:
             return
         
@@ -219,12 +219,23 @@ class MyWindow(QWidget):
         self.ax.imshow(self._inserted_metal, cmap='gray')
         self.canvas.draw()
 
+    def _set_file_cnt(self, non_ma_num, ma_num):
+        non_ma_num = int(''.join(non_ma_num))
+        ma_num = int(''.join(ma_num))
+        if non_ma_num not in self.file_dict:
+            self.file_dict[non_ma_num] = {ma_num:0}
+        else:
+            if ma_num not in self.file_dict[non_ma_num]:
+                self.file_dict[non_ma_num][ma_num] = 0
+            else:
+                self.file_dict[non_ma_num][ma_num] += 1
+        return self.file_dict[non_ma_num][ma_num]
+
     def save_img(self):
         non_ma_num = self.non_MA_path.text().split("\\")[-1][:-4].split("_")
         ma_num = self.MA_path.text().split("\\")[-1][:-4].split("_")
 
-        self.file_dict[int(sum(non_ma_num))][int(sum(ma_num))] += 1
-        path_cnt = self.file_dict[int(sum(non_ma_num))][int(sum(ma_num))]
+        path_cnt = self._set_file_cnt(non_ma_num, ma_num)
         path = "%s\\inserted\\%s_%s_%s_%s_%d"%(os.getcwd(), *non_ma_num, *ma_num, path_cnt)
         print("Save Img : ", path)
         np.save(path+".npy", self._inserted_metal)

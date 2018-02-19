@@ -68,7 +68,6 @@ class MA:
                 return
 
             cliped_MA = self.origin_MA * flaged_MA
-<<<<<<< HEAD
 
             if metal_cnt == 1:
                 self._metal = self._get_metal_range(cliped_MA)
@@ -77,16 +76,6 @@ class MA:
                 self._metal = self._get_metal_range(cliped_MA[:, 0:cliped_MA//2]) 
                 self._metal_r = self._get_metal_range(cliped_MA[:, cliped_MA//2: cliped_MA]) 
 
-=======
-            if sum(sum(left_MA)) > 0 or sum(sum(right_MA)) > 0:
-                self.metal_cnt = 2
-                self._metal = self._get_metal_range(cliped_MA[:, 0:flaged_MA_X//2]) 
-                self._metal_r = self._get_metal_range(cliped_MA[:, flaged_MA_X//2: flaged_MA_X]) 
-            else:               
-                self.metal_cnt = 1
-                self._metal = self._get_metal_range(cliped_MA)
-    
->>>>>>> 993463ead7b43af8033f7165aa8fcc3230cc9f49
     def _get_metal(self, metal, zoom, angle):
         if angle > 0:
             metal = scipy.ndimage.rotate(metal, angle)
@@ -204,15 +193,14 @@ class MyWindow(QWidget):
         
     def input_imgs(self):
         non_MA_path, MA_path = self._get_path()
+        """
         # For Test
         MA_path = r"C:\DW_Intern\DCM\01_MA_Image\15369989\15369989_0070.DCM"
         non_MA_path = r"C:\DW_Intern\DCM\03_Non_MA\15858650\15858650_0000.DCM"
-<<<<<<< HEAD
 
         MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\27178009_0230.DCM"
         non_MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\15858650_0059.DCM"
-=======
->>>>>>> 993463ead7b43af8033f7165aa8fcc3230cc9f49
+        """
         if self.non_MA is None or self.MA_path is None:
             return
         
@@ -231,36 +219,14 @@ class MyWindow(QWidget):
         self.ax.imshow(self._inserted_metal, cmap='gray')
         self.canvas.draw()
 
-<<<<<<< HEAD
-=======
-    def _set_file_cnt(self, non_ma_num, ma_num):
-        non_ma_num = int(''.join(non_ma_num))
-        ma_num = int(''.join(ma_num))
-        if self.file_dict.has_keys(non_ma_num):
-            self.file_dict[non_ma_num] = {ma_num:0}
-        else:
-            if self.file_dict[non_ma_num].has_keys(ma_num):
-                self.file_dict[non_ma_num][ma_num] = 0
-            else:
-                self.file_dict[non_ma_num][ma_num] += 1
-        return self.file_dict[non_ma_num][ma_num]
-
->>>>>>> 993463ead7b43af8033f7165aa8fcc3230cc9f49
     def save_img(self):
         non_ma_num = self.non_MA_path.text().split("\\")[-1][:-4].split("_")
         ma_num = self.MA_path.text().split("\\")[-1][:-4].split("_")
 
-<<<<<<< HEAD
         self.file_dict[int(sum(non_ma_num))][int(sum(ma_num))] += 1
         path_cnt = self.file_dict[int(sum(non_ma_num))][int(sum(ma_num))]
         path = "%s\\inserted\\%s_%s_%s_%s_%d"%(os.getcwd(), *non_ma_num, *ma_num, path_cnt)
-        print(path)
-=======
-        path_cnt = self._set_file_cnt(non_ma_num, ma_num)
-        path = "%s\\inserted\\%s_%s_%s_%s_%04d"%(os.getcwd(), *non_ma_num, *ma_num, path_cnt)
->>>>>>> 993463ead7b43af8033f7165aa8fcc3230cc9f49
         print("Save Img : ", path)
-        
         np.save(path+".npy", self._inserted_metal)
         self.fig.savefig(path+".png")
         

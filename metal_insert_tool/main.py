@@ -31,11 +31,7 @@ class Non_MA:
         return inserted_metal.clip(np.amin(inserted_metal), 4095)
 
 
-class MA:
-    def _trim(x):
-        return x if x >= 4090 else 0
-    metal_extract = np.vectorize(_trim)
-    
+class MA:    
     def __init__(self):
         self.old_path = None
         self.metal_cnt = 1
@@ -56,10 +52,14 @@ class MA:
             left_MA, right_MA = flaged_MA[:, 0:flaged_MA_X//2], flaged_MA[:, flaged_MA_X//2:flaged_MA_X]
 
             cliped_MA = self.origin_MA * flaged_MA
-            if sum(sum(left_MA)) > 0 or sum(sum(right_MA)) > 0:
+            left_MA_sum, right_MA_sum = np.sum(left_MA), np.sum(right_MA)
+            if left_MA_sum > 0 or right_MA_sum > 0:
                 self.metal_cnt = 2
                 self._metal = self._get_metal_range(cliped_MA[:, 0:cliped_MA//2]) 
                 self._metal_r = self._get_metal_range(cliped_MA[:, cliped_MA//2: cliped_MA]) 
+            # got no metal
+            elif left_MA_sum + right_MA_sum == 0:
+                self._metal = np.array([0.])
             else:               
                 self.metal_cnt = 1
                 self._metal = self._get_metal_range(cliped_MA)

@@ -16,7 +16,7 @@ class Non_MA:
     
     def set_img(self, path):
         if path != self.old_path:
-            self.origin_non_MA = dicom.read_file(path).pixel_array.astype(float)
+            self.origin_non_MA = dicom.read_file(path).pixel_array.astype("float32")
             self.old_path = path
 
     def insert_metal(self, metal, y, x, metal_r=None, y2=None, x2=None):        
@@ -45,7 +45,7 @@ class MA:
     def set_img(self, path):
         if path != self.old_path:
             self.old_path = path
-            self.origin_MA = dicom.read_file(path).pixel_array.astype(float)
+            self.origin_MA = dicom.read_file(path).pixel_array.astype("float32")
             flaged_MA = (self.origin_MA >= 4090).astype(int)
 
             flaged_MA_X = flaged_MA.shape[1]

@@ -57,7 +57,7 @@ class MA:
         return metal_img[y_min:y_max, x_min:x_max]
 
     def set_img(self, path, metal_cnt):
-        if path != self.old_path and self.metal_cnt != metal_cnt:
+        if path != self.old_path:
             self.metal_cnt = metal_cnt
             self.old_path = path
             self.origin_MA = dicom.read_file(path).pixel_array.astype("float32")
@@ -71,7 +71,7 @@ class MA:
 
             if metal_cnt == 1:
                 self._metal = self._get_metal_range(cliped_MA)
-            else metal_cnt == 2:
+            elif metal_cnt == 2:
                 # It could be occurs error, when metal on middle
                 self._metal = self._get_metal_range(cliped_MA[:, 0:cliped_MA//2]) 
                 self._metal_r = self._get_metal_range(cliped_MA[:, cliped_MA//2: cliped_MA]) 
@@ -193,11 +193,12 @@ class MyWindow(QWidget):
         
     def input_imgs(self):
         non_MA_path, MA_path = self._get_path()
-        """
-        For Test
+        # For Test
         MA_path = r"C:\DW_Intern\DCM\01_MA_Image\15369989\15369989_0070.DCM"
         non_MA_path = r"C:\DW_Intern\DCM\03_Non_MA\15858650\15858650_0000.DCM"
-        """
+
+        MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\27178009_0230.DCM"
+        non_MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\15858650_0059.DCM"
         if self.non_MA is None or self.MA_path is None:
             return
         

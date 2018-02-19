@@ -11,6 +11,9 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 
 class Non_MA:
+    """
+    Background image to synthesize    
+    """
     def __init__(self):
         self.old_path = None
     
@@ -19,7 +22,12 @@ class Non_MA:
             self.origin_non_MA = dicom.read_file(path).pixel_array.astype("float32")
             self.old_path = path
 
-    def insert_metal(self, metal, y, x, metal_r=None, y2=None, x2=None):        
+    def insert_metal(self, metal, y, x, metal_r=None, y2=None, x2=None):
+        """
+        Metal insert on background image
+        metal, y, x : insert one metal on y, x index
+        metal_r, y2, x2 : insert another metal
+        """
         m_y, m_x = metal.shape
         inserted_metal = self.origin_non_MA.copy()
         inserted_metal[y:y + m_y, x:x + m_x] += metal
@@ -32,38 +40,42 @@ class Non_MA:
 
 
 class MA:
-    def _trim(x):
-        return x if x >= 4090 else 0
-    metal_extract = np.vectorize(_trim)
-    
+    """
+    Extract metal image on MA image
+    """
     def __init__(self):
         self.old_path = None
         self.metal_cnt = 1
 
     def _get_metal_range(self, metal_img):
+        """
+        Return square with metal parts
+        """
         metal_range = np.where(metal_img != 0)
         y_min, y_max = min(metal_range[0]), max(metal_range[0])
         x_min, x_max = min(metal_range[1]), max(metal_range[1])
         return metal_img[y_min:y_max, x_min:x_max]
 
-    def set_img(self, path):
+    def set_img(self, path, metal_cnt):
         if path != self.old_path:
+            self.metal_cnt = metal_cnt
             self.old_path = path
             self.origin_MA = dicom.read_file(path).pixel_array.astype("float32")
             flaged_MA = (self.origin_MA >= 4090).astype(int)
-
-            flaged_MA_X = flaged_MA.shape[1]
-            left_MA, right_MA = flaged_MA[:, 0:flaged_MA_X//2], flaged_MA[:, flaged_MA_X//2:flaged_MA_X]
+            # got no metal
+            if np.sum(flaged_MA) == 0 :
+                self._metal = np.array([0.])
+                return
 
             cliped_MA = self.origin_MA * flaged_MA
-            if sum(sum(left_MA)) > 0 or sum(sum(right_MA)) > 0:
-                self.metal_cnt = 2
-                self._metal = self._get_metal_range(cliped_MA[:, 0:flaged_MA_X//2]) 
-                self._metal_r = self._get_metal_range(cliped_MA[:, flaged_MA_X//2: flaged_MA_X]) 
-            else:               
-                self.metal_cnt = 1
+
+            if metal_cnt == 1:
                 self._metal = self._get_metal_range(cliped_MA)
-    
+            elif metal_cnt == 2:
+                # It could be occurs error, when metal on middle
+                self._metal = self._get_metal_range(cliped_MA[:, 0:cliped_MA//2]) 
+                self._metal_r = self._get_metal_range(cliped_MA[:, cliped_MA//2: cliped_MA]) 
+
     def _get_metal(self, metal, zoom, angle):
         if angle > 0:
             metal = scipy.ndimage.rotate(metal, angle)
@@ -107,7 +119,8 @@ class MyWindow(QWidget):
         
         self.location_edit2 = QLineEdit()          
         self.zoom_edit2 = QLineEdit()
-        self.angle_edit2 = QLineEdit()
+        self.angle_edit2 = QLineEdit()        
+        self.metal_cnt = QLineEdit()
 
         self.pushButton = QPushButton("Set Image")  
         self.pushButton.clicked.connect(self.input_imgs)
@@ -136,12 +149,14 @@ class MyWindow(QWidget):
         downLayout1.addWidget(self.pushButton)
         downLayout1.addWidget(self.saveButton)
         downLayout2 = QHBoxLayout()
-        downLayout2.addWidget(QLabel("Y X(0 ~ 512) : "))
+        downLayout2.addWidget(QLabel("Y2 X2(0 ~ 512) : "))
         downLayout2.addWidget(self.location_edit2)
-        downLayout2.addWidget(QLabel("Zoom(real number): "))
+        downLayout2.addWidget(QLabel("Zoom2(real number): "))
         downLayout2.addWidget(self.zoom_edit2)
-        downLayout2.addWidget(QLabel("angle(0 ~ 360) : "))
+        downLayout2.addWidget(QLabel("angle2(0 ~ 360) : "))
         downLayout2.addWidget(self.angle_edit2)
+        downLayout2.addWidget(QLabel("Metal Count : "))
+        downLayout2.addWidget(self.metal_cnt)
         downLayout.addStretch(1)
 
         layout = QVBoxLayout()        
@@ -165,8 +180,9 @@ class MyWindow(QWidget):
         locate = (0, 0) if len(self.location_edit.text()) == 0 else [int(i) for i in self.location_edit.text().split()]
         zoom = 1.0 if len(self.zoom_edit.text()) == 0 else float(self.zoom_edit.text())
         angle = 0 if len(self.angle_edit.text()) == 0 else int(self.angle_edit.text())
-        print("Params_______ : ", locate, zoom, angle)
-        return locate, zoom, angle
+        metal_cnt = 1 if len(self.angle_edit.text()) == 0 else int(self.angle_edit.text())
+        print("Params_______ : ", locate, zoom, angle, metal_cnt)
+        return locate, zoom, angle, metal_cnt
 
     def _get_input_params2(self):
         locate2 = (0, 0) if len(self.location_edit.text()) == 0 else [int(i) for i in self.location_edit2.text().split()]
@@ -177,17 +193,22 @@ class MyWindow(QWidget):
         
     def input_imgs(self):
         non_MA_path, MA_path = self._get_path()
+        """
         # For Test
         MA_path = r"C:\DW_Intern\DCM\01_MA_Image\15369989\15369989_0070.DCM"
         non_MA_path = r"C:\DW_Intern\DCM\03_Non_MA\15858650\15858650_0000.DCM"
+        MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\27178009_0230.DCM"
+        non_MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\15858650_0059.DCM"
+        """
+        
         if self.non_MA is None or self.MA_path is None:
             return
         
+        l, z, a, metal_cnt = self._get_input_params()
         self.non_MA.set_img(non_MA_path)
-        self.metal.set_img(MA_path)
+        self.metal.set_img(MA_path, metal_cnt)
 
-        l, z, a = self._get_input_params()
-        if self.metal.metal_cnt == 1:
+        if metal_cnt == 1:
             metal = self.metal.get_metal(z, a)
             self._inserted_metal = self.non_MA.insert_metal(metal, l[0], l[1])
         else:
@@ -201,10 +222,10 @@ class MyWindow(QWidget):
     def _set_file_cnt(self, non_ma_num, ma_num):
         non_ma_num = int(''.join(non_ma_num))
         ma_num = int(''.join(ma_num))
-        if self.file_dict.has_keys(non_ma_num):
+        if non_ma_num not in self.file_dict:
             self.file_dict[non_ma_num] = {ma_num:0}
         else:
-            if self.file_dict[non_ma_num].has_keys(ma_num):
+            if ma_num not in self.file_dict[non_ma_num]:
                 self.file_dict[non_ma_num][ma_num] = 0
             else:
                 self.file_dict[non_ma_num][ma_num] += 1
@@ -215,9 +236,8 @@ class MyWindow(QWidget):
         ma_num = self.MA_path.text().split("\\")[-1][:-4].split("_")
 
         path_cnt = self._set_file_cnt(non_ma_num, ma_num)
-        path = "%s\\inserted\\%s_%s_%s_%s_%04d"%(os.getcwd(), *non_ma_num, *ma_num, path_cnt)
+        path = "%s\\inserted\\%s_%s_%s_%s_%d"%(os.getcwd(), *non_ma_num, *ma_num, path_cnt)
         print("Save Img : ", path)
-        
         np.save(path+".npy", self._inserted_metal)
         self.fig.savefig(path+".png")
         

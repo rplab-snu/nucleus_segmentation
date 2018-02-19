@@ -2,6 +2,8 @@ __pycache__
 __pycache__/*
 inserted/*
 *.npy
+*.DCM
+*.dcm
 *.png
 .vscode
 .vscode/*

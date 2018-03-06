@@ -73,8 +73,8 @@ class MA:
                 self._metal = self._get_metal_range(cliped_MA)
             elif metal_cnt == 2:
                 # It could be occurs error, when metal on middle
-                self._metal = self._get_metal_range(cliped_MA[:, 0:cliped_MA//2]) 
-                self._metal_r = self._get_metal_range(cliped_MA[:, cliped_MA//2: cliped_MA]) 
+                self._metal = self._get_metal_range(cliped_MA[:, 0:cliped_MA.shape[0]//2]) 
+                self._metal_r = self._get_metal_range(cliped_MA[:, cliped_MA.shape[0]//2: cliped_MA.shape[0]]) 
 
     def _get_metal(self, metal, zoom, angle):
         if angle > 0:
@@ -180,14 +180,14 @@ class MyWindow(QWidget):
         locate = (0, 0) if len(self.location_edit.text()) == 0 else [int(i) for i in self.location_edit.text().split()]
         zoom = 1.0 if len(self.zoom_edit.text()) == 0 else float(self.zoom_edit.text())
         angle = 0 if len(self.angle_edit.text()) == 0 else int(self.angle_edit.text())
-        metal_cnt = 1 if len(self.angle_edit.text()) == 0 else int(self.angle_edit.text())
+        metal_cnt = 1 if len(self.metal_cnt.text()) == 0 else int(self.metal_cnt.text())
         print("Params_______ : ", locate, zoom, angle, metal_cnt)
         return locate, zoom, angle, metal_cnt
 
     def _get_input_params2(self):
-        locate2 = (0, 0) if len(self.location_edit.text()) == 0 else [int(i) for i in self.location_edit2.text().split()]
-        zoom2 = 1.0 if len(self.zoom_edit.text()) == 0 else float(self.zoom_edit2.text())
-        angle2 = 0 if len(self.angle_edit.text()) == 0 else int(self.angle_edit2.text())
+        locate2 = (0, 0) if len(self.location_edit2.text()) == 0 else [int(i) for i in self.location_edit2.text().split()]
+        zoom2 = 1.0 if len(self.zoom_edit2.text()) == 0 else float(self.zoom_edit2.text())
+        angle2 = 0 if len(self.angle_edit2.text()) == 0 else int(self.angle_edit2.text())
         print("Params_______ : ", locate2, zoom2, angle2)
         return locate2, zoom2, angle2
         
@@ -195,18 +195,17 @@ class MyWindow(QWidget):
         non_MA_path, MA_path = self._get_path()
         """
         # For Test
-        MA_path = r"C:\DW_Intern\DCM\01_MA_Image\15369989\15369989_0070.DCM"
-        non_MA_path = r"C:\DW_Intern\DCM\03_Non_MA\15858650\15858650_0000.DCM"
-        MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\27178009_0230.DCM"
-        non_MA_path = r"F:\OneDrive\RPLab\MAR\metal_insert_tool\15858650_0059.DCM"
+        MA_path     =   r"C:\Users\zsef1\OneDrive\RPLab\MAR\metal_insert_tool\15369989_0096.DCM"
+        non_MA_path =   r"C:\Users\zsef1\OneDrive\RPLab\MAR\metal_insert_tool\15858650_0030.DCM"
         """
-        
         if self.non_MA is None or self.MA_path is None:
             return
-        
+        if os.path.exists(non_MA_path) is False or os.path.exists(MA_path) is False:
+            return
+
         l, z, a, metal_cnt = self._get_input_params()
-        self.non_MA.set_img(non_MA_path)
         self.metal.set_img(MA_path, metal_cnt)
+        self.non_MA.set_img(non_MA_path)
 
         if metal_cnt == 1:
             metal = self.metal.get_metal(z, a)

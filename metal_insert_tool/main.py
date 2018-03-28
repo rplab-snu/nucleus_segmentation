@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
+import cv2
 
 class Non_MA:
     """
@@ -81,7 +81,7 @@ class MA:
             metal = scipy.ndimage.rotate(metal, angle)
         if zoom != 1:
             metal = scipy.ndimage.zoom(metal, zoom, order=0)
-        return metal
+        return cv2.GaussianBlur(metal, (5, 5), 0)
 
     def get_metal(self, zoom=1, angle=0, zoom2=1, angle2=0):       
         if self.metal_cnt == 1:

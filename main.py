@@ -1,7 +1,7 @@
 import os
 import argparse
 import MARLoader
-import models.FusionGenerator as FusionGenerator
+from models import *
 
 """parsing and configuration"""
 def arg_parse():    
@@ -64,14 +64,25 @@ if __name__ == "__main__":
 
     val_loader   = MARLoader(val_path,   arg.batch_size, image_type=arg.output, cpus=arg.cpus,)
     train_loader = MARLoader(train_path, arg.batch_size, image_type=arg.output, cpus=arg.cpus,)
-    test_loader  = MARLoader(test_path,  arg.batch_size, image_type=arg.output, cpus=arg.cpus,,
+    test_loader  = MARLoader(test_path,  arg.batch_size, image_type=arg.output, cpus=arg.cpus,
                              infer=arg.infer)
 
     model_type = arg.model        
     if model_type == "fusion":
-        model = FusionGenerator(arg, recon_loss=nn.L1Loss(), mse_loss=nn.MSELoss())
+        fusionnet = Fusionnet(1, 1, arg.ngf, arg.output, arg.clamp).cuda()
+        model = CNNTrainer(arg, fusionnet, recon_loss=nn.L1Loss(), mse_loss=nn.MSELoss())
+    elif model_type == "unet":
+        # for example
+        # unet = Unet(1, 1, arg.ngf, arg.output, arg.clamp).cuda()
+        # model = CNNTrainer(arg, Unet, recon_loss=nn.L1Loss(), mse_loss=nn.MSELoss())
+        raise NotImplementedError("Not Implemented Unet")
+
     elif model_type == "pix2pix":
-        raise NotImplementedError("Not Implemented Pix2Pix")
+        # G = ...Net
+        # D = ...Discriminator
+        # model = GANTrainer(...)
+        raise NotImplementedError("Not Implemented Model")
+        
     else:
         raise NotImplementedError("Not Implemented Model")
 

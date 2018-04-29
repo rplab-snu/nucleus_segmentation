@@ -24,7 +24,6 @@ class MARDataset(data.Dataset):
 
     def _train_getitem(self, idx):
         img, f_name = self._load_to_tensor(idx)
-        print(idx)
         input_  = img[:, :, :512]
         target_ = img[:, :, 512:]
         return input_, target_, f_name

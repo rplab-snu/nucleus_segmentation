@@ -75,3 +75,18 @@ def image_save(self, save_path, type_, input_, output_, target_=None):
 
     np.save(save_path +'.npy', Total)
     scipy.misc.imsave(save_path + '.png', Total)
+
+def slack_alarm(send_id, send_msg="Train Done"):
+    """
+    send_id : slack id. ex) zsef123
+    """
+    import os
+    from slackclient import SlackClient
+    slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
+    if slack_client.rtm_connect(with_team_state=False):
+        ret = slack_client.api_call("chat.postMessage", channel="@"+send_id, text=send_msg, as_user=True)
+        resp = "Send Failed" if ret['ok'] == False else "To %s, send %s"%(send_id, send_msg)
+        print(resp)
+    else:
+        print("Client connect Fail")
+

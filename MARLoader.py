@@ -34,4 +34,4 @@ class MARDataset(data.Dataset):
 
 def MARLoader(image_path, batch_size, image_type, cpus=1, infer=False):
     d_set = MARDataset(image_path, infer, image_type)
-    return data.DataLoader(dset, batch_size, shuffle=True, num_workers=cpus, drop_last=!(infer))
+    return data.DataLoader(dset, batch_size, shuffle=True, num_workers=cpus, drop_last=not infer)

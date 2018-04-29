@@ -5,13 +5,15 @@ from skimage.transform import iradon
 
 def get_save_dir(arg):
     if arg.model == "fusion":
-        save_path = "%s/%s_%s_ep%d_batch%d_ngf%d_lrG%d_beta%f_%f"
-                    %(arg.save_dir, arg.model, arg.output,
-                      arg.epoch, arg.batch_size, arg.ngf, arg.lrG, arg.beta1, arg.beta2)
+        save_path = "%s/%s_%s_ep%d_batch%d_ngf%d_lrG%d_beta%f_%f" %(
+                      arg.save_dir, arg.model, arg.output,
+                      arg.epoch, arg.batch_size, arg.ngf, arg.lrG, arg.beta1, arg.beta2
+                     )
     elif arg.model == "pix2pix":
-        save_path = "%s/%s_%s_ep%d_batch%d_ngf%d_lrG%d_lrD_beta%f_%f"
-                    %(arg.save_dir, arg.model, arg.output,
-                      arg.epoch, arg.batch_size, arg.ngf, arg.lrG, arg.lrD, arg.beta1, arg.beta2)
+        save_path = "%s/%s_%s_ep%d_batch%d_ngf%d_lrG%d_lrD_beta%f_%f" % (
+                      arg.save_dir, arg.model, arg.output,
+                      arg.epoch, arg.batch_size, arg.ngf, arg.lrG, arg.lrD, arg.beta1, arg.beta2
+                      )
     else:
         raise NotImplementedError("arg.model is %s"%(arg.model))
     return save_path
@@ -49,7 +51,7 @@ def sin2res(input_, output_, target_ = None):
     return Total
 
 def image_save(self, save_path, type_, input_, output_, target_=None):
-    if type_ == "img2img"
+    if type_ == "img2img":
         if target_ is None:
             Total = np.concatenate((input_, output_), axis = 1)
         else:

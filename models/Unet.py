@@ -60,7 +60,7 @@ class UnetSkipConnectionBlock(nn.Module):
 # if |num_downs| == 7, image of size 128x128 will become of size 1x1
 # at the bottleneck
 class Unet(nn.Module):
-    def __init__(self, input_nc, output_nc, num_downs, ngf=64, output, out_clamp=None,
+    def __init__(self, input_nc, output_nc, num_downs, output, ngf=64,out_clamp=None,
                  norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
         super(Unet, self).__init__()
         self.gpu_ids = gpu_ids

@@ -5,6 +5,7 @@ inserted/*
 *.DCM
 *.dcm
 *.png
+*.tar
 .vscode
 .vscode/*
 build
@@ -12,3 +13,4 @@ build/*
 dist
 dist/*
 test.py
+

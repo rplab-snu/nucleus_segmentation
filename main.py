@@ -1,7 +1,12 @@
 import os
 import argparse
-import MARLoader
-from models import *
+import torch.nn as nn
+from MARLoader import MARLoader
+from models.Fusionnet import Fusionnet
+from models.Unet import Unet
+from trainers.CNNTrainer import CNNTrainer
+from trainers.GANTrainer import GANTrainer
+
 
 """parsing and configuration"""
 def arg_parse():    
@@ -14,7 +19,7 @@ def arg_parse():
                         help="Select CPU Number workers")                        
     parser.add_argument('--model', type=str, default='fusion',
                         choices=['fusion', "pix2pix"], required=True,
-                        help='The type of Models | fusion | pix2pix |'))
+                        help='The type of Models | fusion | pix2pix |')
     parser.add_argument('--output', type=str, default='sin2res',
                         choices=['sin2res', 'img2res', 'img2img'], required=True,
                         help='The name of outputs | sin2res | img2res | img2img |')
@@ -60,24 +65,23 @@ if __name__ == "__main__":
         os.mkdir(arg.save_dir)
 
     output_type = arg.output
-    train_path, val_path, test_path = None, None, None
+    train_path = "../00_Data/npy/Train_sinogram"
+    valid_path = "../00_Data/npy/Val"
+    # test_path  = ""
 
-    val_loader   = MARLoader(val_path,   arg.batch_size, image_type=arg.output, cpus=arg.cpus,)
+    valid_loader = MARLoader(valid_path, arg.batch_size, image_type=arg.output, cpus=arg.cpus,)
     train_loader = MARLoader(train_path, arg.batch_size, image_type=arg.output, cpus=arg.cpus,)
-    test_loader  = MARLoader(test_path,  arg.batch_size, image_type=arg.output, cpus=arg.cpus,
-                             infer=arg.infer)
 
-    model_type = arg.model        
-    if model_type == "fusion":
+    if arg.model == "fusion":
         fusionnet = Fusionnet(1, 1, arg.ngf, arg.output, arg.clamp).cuda()
         model = CNNTrainer(arg, fusionnet, recon_loss=nn.L1Loss(), mse_loss=nn.MSELoss())
-    elif model_type == "unet":
+    elif arg.model == "unet":
         # for example
         # unet = Unet(1, 1, arg.ngf, arg.output, arg.clamp).cuda()
         # model = CNNTrainer(arg, Unet, recon_loss=nn.L1Loss(), mse_loss=nn.MSELoss())
         raise NotImplementedError("Not Implemented Unet")
 
-    elif model_type == "pix2pix":
+    elif arg.model == "pix2pix":
         # G = ...Net
         # D = ...Discriminator
         # model = GANTrainer(...)
@@ -86,9 +90,9 @@ if __name__ == "__main__":
     else:
         raise NotImplementedError("Not Implemented Model")
 
-    if infer:
+    if arg.infer:
         model.inference(test_loader)
     else:
-        model.train(train_loader, val_loader)
-        model.test(test_loader)
+        model.train(train_loader, valid_loader)
+        # model.test(test_loader)
     

@@ -24,7 +24,7 @@ class MARDataset(data.Dataset):
 
     def _train_getitem(self, idx):
         img, f_name = self._load_to_tensor(idx)
-
+        print(idx)
         input_  = img[:, :, :512]
         target_ = img[:, :, 512:]
         return input_, target_, f_name
@@ -33,5 +33,5 @@ class MARDataset(data.Dataset):
         return len(self.imgs)
 
 def MARLoader(image_path, batch_size, image_type, cpus=1, infer=False):
-    d_set = MARDataset(image_path, infer, image_type)
-    return data.DataLoader(dset, batch_size, shuffle=True, num_workers=cpus, drop_last=!(infer))
+    dataset = MARDataset(image_path, infer, image_type)
+    return data.DataLoader(dataset, batch_size, shuffle=True, num_workers=cpus, drop_last=not infer)

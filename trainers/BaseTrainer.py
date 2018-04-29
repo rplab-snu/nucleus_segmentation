@@ -1,6 +1,8 @@
+import utils
+
 class BaseTrainer:
     def __init__(self, arg):
-        self.model_type = arg.model_type
+        self.model_type = arg.model
 
         self.epoch = arg.epoch
         self.start_epoch = 0
@@ -8,10 +10,8 @@ class BaseTrainer:
         self.batch_size = arg.batch_size
         
         self.output = arg.output
-        self.recon_loss = recon_loss
-        self.mse_loss = mse_loss     
 
-        self.save_path = util.get_save_dir(arg)
+        self.save_path = utils.get_save_dir(arg)
     
     def save(self):
         raise NotImplementedError("notimplemented save method")

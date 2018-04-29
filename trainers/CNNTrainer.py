@@ -1,9 +1,12 @@
+import os
 import utils
-import BaseTrainer
+import torch
+import torch.nn as nn
+from .BaseTrainer import BaseTrainer
 
 class CNNTrainer(BaseTrainer):
     def __init__(self, arg, G, recon_loss, mse_loss=None):
-        super(BaseTrainer, self).__init__(arg)
+        super(CNNTrainer, self).__init__(arg)
         self.output = arg.output
         self.recon_loss = recon_loss
         self.mse_loss = mse_loss     
@@ -14,28 +17,28 @@ class CNNTrainer(BaseTrainer):
             
         self.optim = torch.optim.Adam(self.G.parameters(), lr=arg.lrG, betas=(arg.beta1, arg.beta2))
 
-        if len(arg.load) != 0:
-            self._load()
-
+        self.load()
         self.best_mse = 1
 
     def save(self):
         if os.path.exists(self.save_path) is False:
             os.mkdir(self.save_path)
-            torch.save({"model_type" : self.model_name,
-                        "start_epoch" : self.start_epoch,
-                        "network" : self.G.state_dict(),
-                        "optimizer" : self.opim.state_dict()
-                        }, os.path.join(self.save_path) + "models.pth.tar")
+        torch.save({"model_type" : self.model_name,
+                    "start_epoch" : self.start_epoch,
+                    "network" : self.G.state_dict(),
+                    "optimizer" : self.opim.state_dict()
+                    }, self.save_path + "models.pth.tar")
 
-    def _load(load_path):
-        checkpoint = torch.load(load_path)
-        if checkpoint['model_type'] not in ["fusion", "unet"]:
-            raise Exception("model_type is %s"%(checkpoint["model_type"]))
-        
-        self.G.load_state_dict(checkpoint['network'])
-        self.optim.load_state_dict(checkpoint['optimizer'])
-        self.start_epoch = checkpoint['start_epoch']
+    def load(self):
+        if os.path.exists(self.save_path + "models.pth.tar") is True:
+            print("Load %s File"%(self.save_path))
+            checkpoint = torch.load(load_path)
+            if checkpoint['model_type'] not in ["fusion", "unet"]:
+                raise Exception("model_type is %s"%(checkpoint["model_type"]))
+                
+            self.G.load_state_dict(checkpoint['network'])
+            self.optim.load_state_dict(checkpoint['optimizer'])
+            self.start_epoch = checkpoint['start_epoch']
 
 
     def train(self, train_loader, val_loader=None):
@@ -43,9 +46,8 @@ class CNNTrainer(BaseTrainer):
         best_loss = None
         # TODO : save ??
         for epoch in range(self.start_epoch, self.epoch):
+            self.G.train()
             for i, (input_, target_, _) in enumerate(train_loader):
-                self.G.train()
-
                 input_  = Variable(input_).cuda()
                 target_ = Variable(target_).cuda()
                 output_ = G(input_)
@@ -59,7 +61,7 @@ class CNNTrainer(BaseTrainer):
                 recon_loss.backward()
                 self.optim.step()
             
-                if i % 100 === 0:
+                if (i % 100) == 0:
                     print("[Train] epoch[%d/%d:%d] loss:%f"%(epoch, self.epoch, i, recon_loss.data[0]))
 
             if val_loader is not None:            

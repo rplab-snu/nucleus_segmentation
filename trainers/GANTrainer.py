@@ -1,13 +1,14 @@
-import BaseTrainer
+import os
+import utils
+import torch
+import torch.nn as nn
+from .BaseTrainer import BaseTrainer
 
 # TODO : Implementation
 class GANTrainer(BaseTrainer):
     def __init__(self, arg, G, D, recon_loss, mse_loss):
-        self.model = arg.model_type
+        super(GANTrainer, self).__init__(arg)     
 
-        self.output = arg.output
-        self.epoch = epoch
-        self.batch_size = arg.batch_size
         self.G = G
         self.D = D
         self.G_optim = torch.optim.Adam(self.G.parameters(), lr=arg.lrG, betas=(arg.beta1, arg.beta2))

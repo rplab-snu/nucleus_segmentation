@@ -14,7 +14,7 @@ def arg_parse():
                         help="Select CPU Number workers")                        
     parser.add_argument('--model', type=str, default='fusion',
                         choices=['fusion', "pix2pix"], required=True,
-                        help='The type of Models | fusion | pix2pix |'))
+                        help='The type of Models | fusion | pix2pix |')
     parser.add_argument('--output', type=str, default='sin2res',
                         choices=['sin2res', 'img2res', 'img2img'], required=True,
                         help='The name of outputs | sin2res | img2res | img2img |')

@@ -21,8 +21,6 @@ class CNNTrainer(BaseTrainer):
             
         self.best_metric = 0
         self.sigmoid = nn.Sigmoid().to(self.torch_device)
-        self.unique_th = unique_th
-        self.th_best = 0
 
         self.load()
         self.prev_epoch_loss = 0
@@ -35,7 +33,6 @@ class CNNTrainer(BaseTrainer):
                     "start_epoch" : epoch + 1,
                     "network" : self.G.state_dict(),
                     "optimizer" : self.optim.state_dict(),
-                    "th_best" : self.th_best,
                     "best_metric": self.best_metric
                     }, self.save_path + "/%s.pth.tar"%(filename))
         print("Model saved %d epoch"%(epoch))
@@ -51,7 +48,6 @@ class CNNTrainer(BaseTrainer):
             self.G.load_state_dict(ckpoint['network'])
             self.optim.load_state_dict(ckpoint['optimizer'])
             self.start_epoch = ckpoint['start_epoch']
-            self.th_best = ckpoint["th_best"]
             self.best_metric = ckpoint["best_metric"]
             print("Load Model Type : %s, epoch : %d th_best:%f"%(ckpoint["model_type"], self.start_epoch, self.th_best))
         else:
@@ -67,12 +63,6 @@ class CNNTrainer(BaseTrainer):
                 input_, target_ = input_.to(self.torch_device), target_.to(self.torch_device)
                 output_ = self.G(input_)
                 recon_loss = self.recon_loss(output_, target_)
-
-                """
-                if recon_loss.item() >= self.prev_epoch_loss + 0.05 and self.prev_epoch_loss != 0:
-                    self.logger.will_write("[fluc] fnames:%s"%(",".join(_)))
-                """
-                self.prev_epoch_loss = recon_loss.item()
                 
                 self.optim.zero_grad()
                 recon_loss.backward()
@@ -98,44 +88,31 @@ class CNNTrainer(BaseTrainer):
     def valid(self, epoch, val_loader):
         self.G.eval()
         with torch.no_grad():
-            y_true = np.array([])
-            y_pred = np.array([])
-            for i, (input_, target_, _) in enumerate(val_loader):
-                input_, output_, target_ = self._test_foward(input_, target_)
-                target_np = utils.slice_threshold(target_, 0.5)
-
-                y_true = np.concatenate([y_true, target_np.flatten()], axis=0)
-                y_pred = np.concatenate([y_pred, output_.flatten()],   axis=0)
-
-            pr_values  = np.array(precision_recall_curve(y_true, y_pred))
-
-            f1_best, th_best = -1, 0
-            for precision, recall, threshold in zip(*pr_values):
-                f1 = 2 * precision * recall / (precision + recall) if (precision + recall) != 0 else 1
-                if f1 > f1_best and f1 != 1:
-                    f1_best = f1
-                    th_best = threshold
-
-            
-            confusions_sum = [0, 0, 0, 0]
+            dice, jss = 0, 0
+            # F1(per dataset) , JSS, Dice(per image)
             for i, (input_, target_, _) in enumerate(val_loader):
                 _, output_, target_ = self._test_foward(input_, target_)
 
                 target_np = utils.slice_threshold(target_, 0.5)
-                output_np = utils.slice_threshold(output_, th_best)
+                output_np = utils.slice_threshold(output_, 0.5)
                 target_f, output_f = target_np.flatten(), output_np.flatten()
                 
                 # element wise sum
                 confusions     =  confusion_matrix(target_f, output_f).ravel()
                 confusions_sum += confusions
+                score = utils.get_roc_pr(*confusion)[-2:]
+                dice += score[0]
+                jss  += score[1]
 
-            *_, total_f1, jss = utils.get_roc_pr(*confusions_sum)
-            if total_f1 > self.best_metric:
-                self.best_metric = total_f1
-                self.th_best = th_best
-                self.save(epoch, "epoch%04d"%(epoch))
+            f1   = utils.get_roc_pr(*confusions_sum)[-2]
+            jss  /= len(val_loader.dataset) 
+            dice /= len(val_loader.dataset)
 
-            self.logger.write("[Val] epoch:%d th:%f f1_best:%f f1_total:%f jss:%f"%(epoch, th_best, f1_best, total_f1, jss))
+            if f1 > self.best_metric:
+                self.best_metric = f1
+                self.save(epoch)
+
+            self.logger.write("[Val] epoch:%d f1:%f jss:%f dice:%f"%(epoch, f1, jss, dice))
                     
 
     def test(self, test_loader):
@@ -155,8 +132,7 @@ class CNNTrainer(BaseTrainer):
             pr_values  = np.array(precision_recall_curve(y_true, y_pred))
 
             np.save("%s/test_roc_values.npy"%(self.save_path), roc_values)
-            np.save("%s/test_pr_values.npy"%(self.save_path),  pr_values)
-            
+            np.save("%s/test_pr_values.npy"%(self.save_path),  pr_values)            
 
             confusions, cnt = [0, 0, 0, 0], 0
             f1_sum = 0
@@ -186,32 +162,3 @@ class CNNTrainer(BaseTrainer):
             scores = utils.get_roc_pr(*confusions)
         self.logger.write("Best Threshold:%f sen:%f spec:%f prec:%f rec:%f f1:%f jss:%f dice:%f"%(self.th_best, *scores, f1_sum / float(cnt)))
         print("End Test\n")
-
-    def inference(self, train_loader, valid_loader, test_loader):
-        raise NotImplementedError()
-
-        print("Start Infernce")
-        os.mkdir("%s/infer"%(self.save_path))
-        os.mkdir("%s/infer/Train"%(self.save_path)); os.mkdir("%s/infer/Valid"%(self.save_path)); os.mkdir("%s/infer/Test"%(self.save_path))
-        loaders=[("Train", train_loader), ("Valid", valid_loader), ("Test", test_loader)]
-        self.G.eval()
-        with torch.no_grad():
-            for path, loader in loaders:
-                metric_avg, dice_avg = 0.0, 0.0
-                for i, (input_, target_, f_name) in enumerate(loader):
-                    input_, output_, target_ = self._test_foward(input_, target_)
-
-                    input_np  = input_.type(torch.FloatTensor).numpy()[0, self.z_idx, :, :]
-                    target_np = utils.slice_threshold(target_[0, 0, :, :], 0.5)
-                    output_np = utils.slice_threshold(output_[0, 0, :, :], self.threshold)
-
-                    jss  = self.metric(output_np, target_np)
-                    dice = utils.dice(output_np, target_np)
-
-                    if dice != 1.0:
-                        save_path = "%s/infer/%s/%s"%(self.save_path, path, f_name[0][:-4])
-                        input_np = (input_np - input_np.min()) / (input_np.max() - input_np.min())
-                        utils.image_save(save_path, input_np, target_np, output_np)
-
-                    metric_avg += jss
-                    dice_avg   += dice

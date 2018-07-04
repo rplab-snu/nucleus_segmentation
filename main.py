@@ -28,27 +28,26 @@ def arg_parse():
     parser.add_argument('--gpus', type=str, default="0,1,2,3",
                         help="Select GPU Numbering | 0,1,2,3 | ")
     parser.add_argument('--cpus', type=int, default="8",
-                        help="Select CPU Number workers")                        
-    parser.add_argument('--model', type=str, default='fusion',
-                        choices=['fusion', "unet", "unet_nonlocal", "unet_gridatt", "unet_multiatt", "unet_dilated"], required=True,
-                        help='The type of Models | fusion | unet | unet_nonlocal | unet_gridatt | unet_multiatt | unet_dilated |')
+                        help="Select CPU Number workers")          
+    parser.add_argument('--model', type=str, default='unet',
+                        choices=['fusion', "unet", "unet_sh"], required=True)
+    # Unet params
+    parser.add_argument('--feature_scale', type=int, default=4)
+    parser.add_argument('--sh_size', type=int, default=1)
+
+    # FusionNet Parameters
+    parser.add_argument('--ngf',   type=int, default=32)
+    parser.add_argument('--clamp', type=tuple, default=None)
 
     parser.add_argument('--augment', type=str, default='',
                         help='The type of augmentaed ex) crop,rotate ..  | crop | flip | elastic | rotate |')
     
+    # TODO : Weighted BCE   
     parser.add_argument('--loss', type=str, default='BCE',
-            choices=['BCE', "focal", "tversky", "MSE"],
-                        help='The type of Models | fusion | unet | unet_nonlocal | unet_gridatt | unet_multiatt | unet_dilated |')
+                        choices=['BCE', "tversky", "MSE"])
+    # Loss Params
     parser.add_argument('--focal_gamma', type=float, default='2', help='')
-    # Tversky Parameters
     parser.add_argument('--t_alpha', type=float, default='0.3', help='')
-
-    parser.add_argument('--in_channel', type=int, default='1',                        
-                        help='The Channel of Input')
-    parser.add_argument('--out_channel', type=int, default='1',                        
-                        help='The Channel of Output')
-    parser.add_argument('--unique_th', action="store_true", help='Use threshold by unique pixel of predicted images')
-
 
 
     parser.add_argument('--dtype', type=str, default='float',
@@ -58,25 +57,20 @@ def arg_parse():
     parser.add_argument('--data', type=str, default='Only_Label',
                         choices=['All', 'Balance', "Only_Label"],
                         help='The dataset | All | Balance | Only_Label |')
+
     parser.add_argument('--sampler', type=str, default='',
                         choices=['weight', ''],
                         help='The setting sampler')
     
     parser.add_argument('--epoch', type=int, default=300, help='The number of epochs')
     parser.add_argument('--batch_size', type=int, default=32, help='The size of batch')
-    parser.add_argument('--infer', action="store_true", help='The size of batch')
     parser.add_argument('--test', action="store_true", help='The size of batch')
     
     parser.add_argument('--save_dir', type=str, default='',
                         help='Directory name to save the model')
     
-    parser.add_argument('--ngf',   type=int, default=32)
-    parser.add_argument('--clamp', type=tuple, default=None)
 
-    parser.add_argument('--feature_scale', type=int, default=4)
-    parser.add_argument('--dilation',      nargs="*", type=int, default=(2,4,8))
-    
-
+    # Adam Parameter
     parser.add_argument('--lrG',   type=float, default=0.0005)
     parser.add_argument('--beta',  nargs="*", type=float, default=(0.5, 0.999))
     
@@ -119,10 +113,10 @@ if __name__ == "__main__":
     train_loader = NucleusLoader(train_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
                                  channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=True, drop_last=True)
-    valid_loader = NucleusLoader(valid_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
+    valid_loader = NucleusLoader(valid_path, 1, transform=preprocess, sampler=arg.sampler,
                                  channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
-                                 shuffle=False, drop_last=True)
-    test_loader  = NucleusLoader(fl_path , arg.batch_size,
+                                 shuffle=False, drop_last=False)
+    test_loader  = NucleusLoader(fl_path , 1,
                                  channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=False)
 
@@ -130,22 +124,14 @@ if __name__ == "__main__":
         net = Fusionnet(arg.in_channel, arg.out_channel, arg.ngf, arg.clamp)
     elif arg.model == "unet":
         net = Unet2D(feature_scale=arg.feature_scale)
-    elif arg.model == "unet_nonlocal":
-        net = Unet_NonLocal2D(feature_scale=arg.feature_scale)
-    elif arg.model == "unet_gridatt":
-        net = Unet_GridAttention2D(feature_scale=arg.feature_scale)
-    elif arg.model == "unet_multiatt":
-        net = Unet_CT_multi_attention_dsv_2D(feature_scale=arg.feature_scale)
-    elif arg.model == "unet_dilated":
-        net = Unet_Dilation_2D(feature_scale=arg.feature_scale, dilation=arg.dilation)
+    elif arg.model == "unet_sh":
+        net = UnetSH2D(arg.sh_size, feature_scale=arg.feature_scale)        
     else:
         raise NotImplementedError("Not Implemented Model")
 
     net = nn.DataParallel(net).to(torch_device)
     if arg.loss == "BCE":
         recon_loss = nn.BCEWithLogitsLoss()
-    elif arg.loss == "focal":
-        recon_loss = FocalLoss(arg.focal_gamma)
     elif arg.loss == "tversky":
         recon_loss = TverskyLoss(arg.t_alpha, torch_device)
     elif arg.loss == "MSE":

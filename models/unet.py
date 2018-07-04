@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 class Unet2D(nn.Module):
 
-    def __init__(self, feature_scale=4, n_classes=1, 
+    def __init__(self, feature_scale=4, n_classes=1,
                  is_deconv=True, is_batchnorm=True):
         super(Unet2D, self).__init__()
         filters = [64, 128, 256, 512, 1024]

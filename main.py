@@ -10,13 +10,9 @@ import preprocess
 from NucleusLoader import NucleusLoader
 from models.Fusionnet import Fusionnet
 from models.unet import Unet2D
-from models.unet_nonlocal import Unet_NonLocal2D
-from models.unet_grid_attention import Unet_GridAttention2D
-from models.unet_ct_multi_attention_dsv import Unet_CT_multi_attention_dsv_2D
-from models.unet_dilated import Unet_Dilation_2D
+from models.UnetSH import UnetSH2D
 
 from trainers.CNNTrainer import CNNTrainer
-from trainers.GANTrainer import GANTrainer
 
 from loss import FocalLoss, TverskyLoss
 

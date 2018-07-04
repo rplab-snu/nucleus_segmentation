@@ -88,6 +88,7 @@ class CNNTrainer(BaseTrainer):
     def valid(self, epoch, val_loader):
         self.G.eval()
         with torch.no_grad():
+            confusions_sum = [0, 0, 0, 0]
             dice, jss = 0, 0
             # F1(per dataset) , JSS, Dice(per image)
             for i, (input_, target_, _) in enumerate(val_loader):
@@ -131,6 +132,13 @@ class CNNTrainer(BaseTrainer):
             roc_values = np.array(roc_curve(y_true, y_pred))
             pr_values  = np.array(precision_recall_curve(y_true, y_pred))
 
+            f1_best, th_best = -1, 0
+            for precision, recall, threshold in zip(*pr_values):
+                f1 = 2 * precision * recall / (precision + recall) if (precision + recall) != 0 else 1
+                if f1 > f1_best and f1 != 1:
+                    f1_best = f1
+                    th_best = threshold
+
             np.save("%s/test_roc_values.npy"%(self.save_path), roc_values)
             np.save("%s/test_pr_values.npy"%(self.save_path),  pr_values)            
 
@@ -140,7 +148,7 @@ class CNNTrainer(BaseTrainer):
                 input_, output_, target_  = self._test_foward(input_, target_)
 
                 target_np = utils.slice_threshold(target_, 0.5)
-                output_np = utils.slice_threshold(output_, self.th_best)
+                output_np = utils.slice_threshold(output_, th_best)
                 for batch_idx in range(0, input_.shape[0]):
                     target_b = target_np[batch_idx, 0, :, :]
                     output_b = output_np[batch_idx, 0, :, :]
@@ -160,5 +168,5 @@ class CNNTrainer(BaseTrainer):
                     cnt += 1
 
             scores = utils.get_roc_pr(*confusions)
-        self.logger.write("Best Threshold:%f sen:%f spec:%f prec:%f rec:%f f1:%f jss:%f dice:%f"%(self.th_best, *scores, f1_sum / float(cnt)))
+        self.logger.write("Best Threshold:%f sen:%f spec:%f prec:%f rec:%f f1:%f jss:%f dice:%f"%(th_best, *scores, f1_sum / float(cnt)))
         print("End Test\n")

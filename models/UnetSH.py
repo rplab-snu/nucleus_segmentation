@@ -7,6 +7,7 @@ class UnetSH2D(nn.Module):
     def __init__(self, sh_size, feature_scale=4, n_classes=1,                 
                  is_deconv=True, is_batchnorm=True):
         super(UnetSH2D, self).__init__()
+        print("UnetSH2D")
         filters = [64, 128, 256, 512, 1024]
         filters = [x // feature_scale for x in filters]
 
@@ -66,13 +67,9 @@ class UnetSH2D(nn.Module):
         return final
 
 if __name__ == "__main__":
-    input2D = torch.Tensor([1, 1, 448, 448])
+    import torch
+    input2D = torch.randn([1, 1, 448, 448])
+    print("input shape : \t", input2D.shape)
     model = UnetSH2D(1)
     output2D = model(input2D)
-    
-    print("input shape : \t", input2D.shape)
     print("output shape  : \t", output2D.shape)
-
-
-
-

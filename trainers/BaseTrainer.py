@@ -7,7 +7,7 @@ class BaseTrainer:
         
         self.model_type = arg.model
 
-        self.z_idx = 0 if arg.in_channel == 1 else arg.in_channel // 2 # middle of 2.5d slices
+        self.z_idx = 0
 
         self.epoch = arg.epoch
         self.start_epoch = 0

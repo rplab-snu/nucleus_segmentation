@@ -12,8 +12,12 @@ def weights_init_kaiming(m):
     elif classname.find('BatchNorm') != -1:
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0.0)
+
+        
 class Shortcut(nn.Module):
     def __init__(self, out_size, sh_size, kernel_size=3, stride=1, padding=1):
+        super(Shortcut, self).__init__()
+
         conv = []
         for sh in range(0, sh_size):
             conv.append(nn.Sequential(nn.Conv2d(out_size, out_size, kernel_size, stride, padding),

@@ -129,20 +129,7 @@ if __name__ == "__main__":
         recon_loss = nn.MSELoss()
 
     model = CNNTrainer(arg, net, torch_device, recon_loss=recon_loss)
-    if arg.infer:
-        train_loader = NucleusLoader(train_path, 1, transform=preprocess,
-                                     channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
-                                     shuffle=False, drop_last=False)
-        valid_loader = NucleusLoader(valid_path, 1, transform=preprocess,
-                                     channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
-                                     shuffle=False, drop_last=False)
-        test_loader  = NucleusLoader(test_path , 1,
-                                     channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
-                                     shuffle=False, drop_last=False)
-
-        model.inference(train_loader, valid_loader, test_loader)
-    else:
-        if arg.test is False:
-            model.train(train_loader, valid_loader)
-        model.test(test_loader)   
+    if arg.test is False:
+        model.train(train_loader, valid_loader)
+    model.test(test_loader)   
     utils.slack_alarm("zsef123", "Model %s Done"%(arg.save_dir))

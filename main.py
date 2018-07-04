@@ -102,13 +102,13 @@ if __name__ == "__main__":
     preprocess = preprocess.get_preprocess(arg.augment)
 
     train_loader = NucleusLoader(train_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
-                                 ctorch_type=arg.dtype, cpus=arg.cpus,
+                                 torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=True, drop_last=True)
     valid_loader = NucleusLoader(valid_path, 1, transform=preprocess, sampler=arg.sampler,
-                                 ctorch_type=arg.dtype, cpus=arg.cpus,
+                                 torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=False)
     test_loader  = NucleusLoader(fl_path , 1,
-                                 ctorch_type=arg.dtype, cpus=arg.cpus,
+                                 torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=False)
 
     if arg.model == "fusion":

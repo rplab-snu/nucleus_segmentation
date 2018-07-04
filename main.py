@@ -128,7 +128,7 @@ if __name__ == "__main__":
     elif arg.loss == "MSE":
         recon_loss = nn.MSELoss()
 
-    model = CNNTrainer(arg, net, torch_device, recon_loss=recon_loss, unique_th=arg.unique_th)
+    model = CNNTrainer(arg, net, torch_device, recon_loss=recon_loss)
     if arg.infer:
         train_loader = NucleusLoader(train_path, 1, transform=preprocess,
                                      channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,

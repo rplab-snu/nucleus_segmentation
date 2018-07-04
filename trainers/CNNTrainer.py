@@ -12,7 +12,7 @@ from .BaseTrainer import BaseTrainer
 from sklearn.metrics import f1_score, confusion_matrix, recall_score, jaccard_similarity_score, roc_curve, precision_recall_curve
 
 class CNNTrainer(BaseTrainer):
-    def __init__(self, arg, G, torch_device, recon_loss, unique_th=False):
+    def __init__(self, arg, G, torch_device, recon_loss):
         super(CNNTrainer, self).__init__(arg, torch_device)
         self.recon_loss = recon_loss
         

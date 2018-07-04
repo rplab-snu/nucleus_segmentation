@@ -101,7 +101,7 @@ class CNNTrainer(BaseTrainer):
                 # element wise sum
                 confusions     =  confusion_matrix(target_f, output_f).ravel()
                 confusions_sum += confusions
-                score = utils.get_roc_pr(*confusion)[-2:]
+                score = utils.get_roc_pr(*confusions)[-2:]
                 dice += score[0]
                 jss  += score[1]
 

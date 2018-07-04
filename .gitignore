@@ -1,0 +1,17 @@
+__pycache__
+__pycache__/*
+outs/*
+inserted/*
+*.npy
+*.DCM
+*.dcm
+*.png
+*.tar
+.vscode
+.vscode/*
+build
+build/*
+dist
+dist/*
+test.py
+

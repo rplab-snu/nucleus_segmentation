@@ -12,31 +12,40 @@ def weights_init_kaiming(m):
     elif classname.find('BatchNorm') != -1:
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0.0)
+class Shortcut(nn.Module):
+    def __init__(self, out_size, sh_size, kernel_size=3, stride=1, padding=1):
+        conv = []
+        for sh in range(0, sh_size):
+            conv.append(nn.Sequential(nn.Conv2d(out_size, out_size, kernel_size, stride, padding),
+                                       nn.BatchNorm2d(out_size),
+                                       nn.ReLU(inplace=True),))
+        self.conv = nn.Sequential(*conv)
+        self.conv_last = nn.Sequential(nn.Conv2d(out_size, out_size, kernel_size, stride, padding),
+                                       nn.BatchNorm2d(out_size),
+                                       nn.ReLU(inplace=True),)
+    
+    def forward(self, x):
+        res = x + self.conv(x)
+        return self.conv_last(x)
+
 
 class UnetSHConv2D(nn.Module):
-    def __init__(self, in_size, out_size, sh_size, is_batchnorm=True, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_size, out_size, sh_size, kernel_size=3, stride=1, padding=1):
         super(UnetSHConv2D, self).__init__()
 
-        if is_batchnorm:
-            self.conv1 = nn.Sequential(nn.Conv2d(in_size, out_size, kernel_size, stride, padding),
-                                       nn.BatchNorm2d(out_size),
-                                       nn.ReLU(inplace=True),)
-            self.conv2 = nn.Sequential(nn.Conv2d(out_size, out_size, kernel_size, 1, padding),
-                                       nn.BatchNorm2d(out_size),
-                                       nn.ReLU(inplace=True),)
-        else:
-            self.conv1 = nn.Sequential(nn.Conv2d(in_size, out_size, kernel_size, stride, padding),
-                                       nn.ReLU(inplace=True),)
-            self.conv2 = nn.Sequential(nn.Conv2d(out_size, out_size, kernel_size, 1, padding),
-                                       nn.ReLU(inplace=True),)
+        self.conv1 = nn.Sequential(nn.Conv2d(in_size, out_size, kernel_size, stride, padding),
+                                    nn.BatchNorm2d(out_size),
+                                    nn.ReLU(inplace=True),)
+        self.shortcut = Shortcut(out_size, sh_size)
 
         # initialise the blocks
         for m in self.children():
             m.apply(weights_init_kaiming)
 
-    def forward(self, inputs):
-        x = self.conv1(inputs)
-        return self.conv2(x)
+    def forward(self, x):
+        x = self.conv1(x)
+        return self.shortcut(x)
+
 
 class UnetSHUpConv2D(nn.Module):
     def __init__(self, in_size, out_size, sh_size, is_deconv=True):
@@ -54,10 +63,10 @@ class UnetSHUpConv2D(nn.Module):
                 continue
             m.apply(weights_init_kaiming)
 
-    def forward(self, input1, input2):
-        output2 = self.up(input2)
-        offset  = output2.size()[2] - input1.size()[2]
+    def forward(self, x1, x2):
+        output2 = self.up(x2)
+        offset  = output2.size()[2] - x1.size()[2]
         padding = [offset // 2] * 4
-        output1 = F.pad(input1, padding)
+        output1 = F.pad(x1, padding)
         output  = torch.cat([output1, output2], 1)
         return self.conv(output)

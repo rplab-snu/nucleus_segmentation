@@ -64,7 +64,6 @@ def arg_parse():
     
     parser.add_argument('--save_dir', type=str, default='',
                         help='Directory name to save the model')
-    
 
     # Adam Parameter
     parser.add_argument('--lrG',   type=float, default=0.0005)
@@ -93,11 +92,7 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = arg.gpus
     torch_device = torch.device("cuda")
 
-    data_path = "/data/00_Nuclues_segmentation/00_data/"
-    if arg.in_channel == 1:
-        data_path += "/2D/New(50_Cells)"
-    elif arg.in_channel > 1 and arg.out_channel == 1:
-        data_path += "/25D/%dchannel"%(arg.in_channel)
+    data_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)"
 
     train_path = data_path + "/%s/Train/"%(arg.data)
     valid_path = data_path + "/%s/Val/"%(arg.data)
@@ -107,13 +102,13 @@ if __name__ == "__main__":
     preprocess = preprocess.get_preprocess(arg.augment)
 
     train_loader = NucleusLoader(train_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
-                                 channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
+                                 ctorch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=True, drop_last=True)
     valid_loader = NucleusLoader(valid_path, 1, transform=preprocess, sampler=arg.sampler,
-                                 channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
+                                 ctorch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=False)
     test_loader  = NucleusLoader(fl_path , 1,
-                                 channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
+                                 ctorch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=False)
 
     if arg.model == "fusion":

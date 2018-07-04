@@ -18,7 +18,6 @@ from models.unet_dilated import Unet_Dilation_2D
 from trainers.CNNTrainer import CNNTrainer
 from trainers.GANTrainer import GANTrainer
 
-from loss import FocalLoss, TverskyLoss
 
 """parsing and configuration"""
 def arg_parse():    
@@ -33,29 +32,19 @@ def arg_parse():
                         choices=['fusion', "unet", "unet_nonlocal", "unet_gridatt", "unet_multiatt", "unet_dilated"], required=True,
                         help='The type of Models | fusion | unet | unet_nonlocal | unet_gridatt | unet_multiatt | unet_dilated |')
 
-    parser.add_argument('--augment', type=str, default='',
-                        help='The type of augmentaed ex) crop,rotate ..  | crop | flip | elastic | rotate |')
-    
-    parser.add_argument('--loss', type=str, default='BCE',
-            choices=['BCE', "focal", "tversky", "MSE"],
-                        help='The type of Models | fusion | unet | unet_nonlocal | unet_gridatt | unet_multiatt | unet_dilated |')
-    parser.add_argument('--focal_gamma', type=float, default='2', help='')
-    # Tversky Parameters
-    parser.add_argument('--t_alpha', type=float, default='0.3', help='')
-
     parser.add_argument('--in_channel', type=int, default='1',                        
                         help='The Channel of Input')
     parser.add_argument('--out_channel', type=int, default='1',                        
                         help='The Channel of Output')
-    parser.add_argument('--unique_th', action="store_true", help='Use threshold by unique pixel of predicted images')
-
+    parser.add_argument('--threshold', type=float, default=0.9,                        
+                        help='The Classfication Threshold')
 
 
     parser.add_argument('--dtype', type=str, default='float',
                         choices=['float', 'half'],
                         help='The torch dtype | float | half |')
 
-    parser.add_argument('--data', type=str, default='Only_Label',
+    parser.add_argument('--data', type=str, default='Balance',
                         choices=['All', 'Balance', "Only_Label"],
                         help='The dataset | All | Balance | Only_Label |')
     parser.add_argument('--sampler', type=str, default='',
@@ -63,7 +52,7 @@ def arg_parse():
                         help='The setting sampler')
     
     parser.add_argument('--epoch', type=int, default=300, help='The number of epochs')
-    parser.add_argument('--batch_size', type=int, default=32, help='The size of batch')
+    parser.add_argument('--batch_size', type=int, default=16, help='The size of batch')
     parser.add_argument('--infer', action="store_true", help='The size of batch')
     parser.add_argument('--test', action="store_true", help='The size of batch')
     
@@ -74,7 +63,7 @@ def arg_parse():
     parser.add_argument('--clamp', type=tuple, default=None)
 
     parser.add_argument('--feature_scale', type=int, default=4)
-    parser.add_argument('--dilation',      nargs="*", type=int, default=(2,4,8))
+    parser.add_argument('--dilation',      type=int, default=2)
     
 
     parser.add_argument('--lrG',   type=float, default=0.0005)
@@ -111,10 +100,9 @@ if __name__ == "__main__":
 
     train_path = data_path + "/%s/Train/"%(arg.data)
     valid_path = data_path + "/%s/Val/"%(arg.data)
-    # test_path  = data_path + "/2D/Test_FL/"
-    fl_path  = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL/"
+    test_path  = data_path + "/All/Test/"
 
-    preprocess = preprocess.get_preprocess(arg.augment)
+    preprocess = preprocess.get_preprocess(arg)
 
     train_loader = NucleusLoader(train_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
                                  channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
@@ -122,7 +110,7 @@ if __name__ == "__main__":
     valid_loader = NucleusLoader(valid_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
                                  channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=True)
-    test_loader  = NucleusLoader(fl_path , arg.batch_size,
+    test_loader  = NucleusLoader(test_path , 1,
                                  channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=False)
 
@@ -142,16 +130,7 @@ if __name__ == "__main__":
         raise NotImplementedError("Not Implemented Model")
 
     net = nn.DataParallel(net).to(torch_device)
-    if arg.loss == "BCE":
-        recon_loss = nn.BCEWithLogitsLoss()
-    elif arg.loss == "focal":
-        recon_loss = FocalLoss(arg.focal_gamma)
-    elif arg.loss == "tversky":
-        recon_loss = TverskyLoss(arg.t_alpha, torch_device)
-    elif arg.loss == "MSE":
-        recon_loss = nn.MSELoss()
-
-    model = CNNTrainer(arg, net, torch_device, recon_loss=recon_loss, unique_th=arg.unique_th)
+    model = CNNTrainer(arg, net, torch_device, recon_loss=nn.BCEWithLogitsLoss(), metric=jaccard_similarity_score)
     if arg.infer:
         train_loader = NucleusLoader(train_path, 1, transform=preprocess,
                                      channel=arg.in_channel, torch_type=arg.dtype, cpus=arg.cpus,

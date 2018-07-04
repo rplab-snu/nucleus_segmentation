@@ -1,6 +1,4 @@
 import os
-from multiprocessing import Pool, Queue, Process
-
 import scipy
 import utils
 import numpy as np
@@ -19,16 +17,14 @@ class CNNTrainer(BaseTrainer):
         self.G = G
         self.optim = torch.optim.Adam(self.G.parameters(), lr=arg.lrG, betas=arg.beta)
             
+        self.load()
         self.best_metric = 0
         self.sigmoid = nn.Sigmoid().to(self.torch_device)
         self.unique_th = unique_th
         self.th_best = 0
 
-        self.load()
-        self.prev_epoch_loss = 0
 
-
-    def save(self, epoch, filename="models"):
+    def save(self, epoch):
         if os.path.exists(self.save_path) is False:
             os.mkdir(self.save_path)
         torch.save({"model_type" : self.model_type,
@@ -37,7 +33,7 @@ class CNNTrainer(BaseTrainer):
                     "optimizer" : self.optim.state_dict(),
                     "th_best" : self.th_best,
                     "best_metric": self.best_metric
-                    }, self.save_path + "/%s.pth.tar"%(filename))
+                    }, self.save_path + "/models.pth.tar")
         print("Model saved %d epoch"%(epoch))
 
 
@@ -67,12 +63,6 @@ class CNNTrainer(BaseTrainer):
                 input_, target_ = input_.to(self.torch_device), target_.to(self.torch_device)
                 output_ = self.G(input_)
                 recon_loss = self.recon_loss(output_, target_)
-
-                """
-                if recon_loss.item() >= self.prev_epoch_loss + 0.05 and self.prev_epoch_loss != 0:
-                    self.logger.will_write("[fluc] fnames:%s"%(",".join(_)))
-                """
-                self.prev_epoch_loss = recon_loss.item()
                 
                 self.optim.zero_grad()
                 recon_loss.backward()
@@ -95,6 +85,7 @@ class CNNTrainer(BaseTrainer):
         input_  = input_.type(torch.FloatTensor).numpy()
         return input_, output_, target_
 
+
     def valid(self, epoch, val_loader):
         self.G.eval()
         with torch.no_grad():
@@ -107,6 +98,7 @@ class CNNTrainer(BaseTrainer):
                 y_true = np.concatenate([y_true, target_np.flatten()], axis=0)
                 y_pred = np.concatenate([y_pred, output_.flatten()],   axis=0)
 
+            roc_values = np.array(roc_curve(y_true, y_pred))
             pr_values  = np.array(precision_recall_curve(y_true, y_pred))
 
             f1_best, th_best = -1, 0
@@ -115,6 +107,9 @@ class CNNTrainer(BaseTrainer):
                 if f1 > f1_best and f1 != 1:
                     f1_best = f1
                     th_best = threshold
+                    # too much spend time
+                    # np.save("%s/valid_best_roc_values.npy"%(self.save_path), roc_values)
+                    # np.save("%s/valid_best_pr_values.npy"%(self.save_path),  pr_values)
 
             
             confusions_sum = [0, 0, 0, 0]
@@ -126,14 +121,14 @@ class CNNTrainer(BaseTrainer):
                 target_f, output_f = target_np.flatten(), output_np.flatten()
                 
                 # element wise sum
-                confusions     =  confusion_matrix(target_f, output_f).ravel()
-                confusions_sum += confusions
+                confusions    =  confusion_matrix(target_f, output_f).ravel()
+                confusions_sum += confusions                
 
             *_, total_f1, jss = utils.get_roc_pr(*confusions_sum)
             if total_f1 > self.best_metric:
                 self.best_metric = total_f1
                 self.th_best = th_best
-                self.save(epoch, "epoch%04d"%(epoch))
+                self.save(epoch)
 
             self.logger.write("[Val] epoch:%d th:%f f1_best:%f f1_total:%f jss:%f"%(epoch, th_best, f1_best, total_f1, jss))
                     

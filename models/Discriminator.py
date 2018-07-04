@@ -1,51 +1,39 @@
 import torch.nn as nn
 
 class Discriminator(nn.Module):
-    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_sigmoid=False, gpu_ids=[]):
-        super(NLayerDiscriminator, self).__init__()
-        self.gpu_ids = gpu_ids
-        if type(norm_layer) == functools.partial:
-            use_bias = norm_layer.func == nn.InstanceNorm2d
-        else:
-            use_bias = norm_layer == nn.InstanceNorm2d
+    def __init__(self, in_channel=1, ndf=64):
+        super(Discriminator, self).__init__()
+        self.in_channel = in_channel
 
-        kw = 4
-        padw = int(np.ceil((kw-1)/2))
-        sequence = [
-            nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw),
-            nn.LeakyReLU(0.2, True)
-        ]
+        self.conv_layer = nn.Sequential(
+            nn.Conv2d(self.in_channel, ndf, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
 
-        nf_mult = 1
-        nf_mult_prev = 1
-        for n in range(1, n_layers):
-            nf_mult_prev = nf_mult
-            nf_mult = min(2**n, 8)
-            sequence += [
-                nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
-                            kernel_size=kw, stride=2, padding=padw, bias=use_bias),
-                norm_layer(ndf * nf_mult),
-                nn.LeakyReLU(0.2, True)
-            ]
+            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
 
-        nf_mult_prev = nf_mult
-        nf_mult = min(2**n_layers, 8)
-        sequence += [
-            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
-                        kernel_size=kw, stride=1, padding=padw, bias=use_bias),
-            norm_layer(ndf * nf_mult),
-            nn.LeakyReLU(0.2, True)
-        ]
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
 
-        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
+        )
 
-        if use_sigmoid:
-            sequence += [nn.Sigmoid()]
-
-        self.model = nn.Sequential(*sequence)
+        self.fc_layer = nn.Linear(25 * 25, 1)
+        self.out = nn.Sigmoid()
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                m.weight.data.normal_(0.0, 0.02)
+                if m.bias is not None:
+                    m.bias.data.zero_()
 
     def forward(self, input):
-        if len(self.gpu_ids) and isinstance(input.data, torch.cuda.FloatTensor):
-            return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
-        else:
-            return self.model(input)
+        out = self.conv_layer(input)
+        out = self.fc_layer(out.view(-1))
+        out = self.out(out)
+        return out

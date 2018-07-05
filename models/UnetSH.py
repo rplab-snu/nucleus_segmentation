@@ -57,7 +57,6 @@ class UnetSH2D(nn.Module):
         maxpool4 = self.maxpool4(conv4)
 
         center = self.center(maxpool4)
-
         up4 = self.up_concat4(conv4, center)
         up3 = self.up_concat3(conv3, up4)
         up2 = self.up_concat2(conv2, up3)
@@ -70,6 +69,6 @@ if __name__ == "__main__":
     import torch
     input2D = torch.randn([1, 1, 448, 448])
     print("input shape : \t", input2D.shape)
-    model = UnetSH2D(1)
+    model = UnetSH2D(3)
     output2D = model(input2D)
     print("output shape  : \t", output2D.shape)

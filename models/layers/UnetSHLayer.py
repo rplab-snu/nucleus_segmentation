@@ -21,8 +21,8 @@ class Shortcut(nn.Module):
         conv = []
         for sh in range(0, sh_size):
             conv.append(nn.Sequential(nn.Conv2d(out_size, out_size, kernel_size, stride, padding),
-                                       nn.BatchNorm2d(out_size),
-                                       nn.ReLU(inplace=True),))
+                                      nn.BatchNorm2d(out_size),
+                                      nn.ReLU(inplace=True),))
         self.conv = nn.Sequential(*conv)
         self.conv_last = nn.Sequential(nn.Conv2d(out_size, out_size, kernel_size, stride, padding),
                                        nn.BatchNorm2d(out_size),
@@ -34,9 +34,8 @@ class Shortcut(nn.Module):
 
 
 class UnetSHConv2D(nn.Module):
-    def __init__(self, in_size, out_size, sh_size, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_size, out_size, sh_size, kernel_size=3, stride=1, padding=0):
         super(UnetSHConv2D, self).__init__()
-
         self.conv1 = nn.Sequential(nn.Conv2d(in_size, out_size, kernel_size, stride, padding),
                                     nn.BatchNorm2d(out_size),
                                     nn.ReLU(inplace=True),)
@@ -48,16 +47,19 @@ class UnetSHConv2D(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        return self.shortcut(x)
+        x = self.shortcut(x)
+        return x
 
 
 class UnetSHUpConv2D(nn.Module):
     def __init__(self, in_size, out_size, sh_size, is_deconv=True):
         super(UnetSHUpConv2D, self).__init__()
 
-        self.conv = UnetSHConv2D(in_size, out_size, sh_size, False)
+        self.conv = UnetSHConv2D(in_size, out_size, sh_size, padding=1)
         if is_deconv:
-            self.up = nn.ConvTranspose2d(in_size, out_size, kernel_size=4, stride=2, padding=1)
+            self.up = nn.ConvTranspose2d(in_size, out_size, 
+                                         kernel_size=3, stride=2, padding=1,
+                                         output_padding=1)
         else:
             self.up = nn.UpsamplingBilinear2d(scale_factor=2)
 

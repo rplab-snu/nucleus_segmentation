@@ -49,7 +49,7 @@ class CNNTrainer(BaseTrainer):
             self.optim.load_state_dict(ckpoint['optimizer'])
             self.start_epoch = ckpoint['start_epoch']
             self.best_metric = ckpoint["best_metric"]
-            print("Load Model Type : %s, epoch : %d th_best:%f"%(ckpoint["model_type"], self.start_epoch, self.th_best))
+            print("Load Model Type : %s, epoch : %d"%(ckpoint["model_type"], self.start_epoch))
         else:
             print("Load Failed, not exists file")
 

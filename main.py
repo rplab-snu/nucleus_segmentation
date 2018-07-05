@@ -58,7 +58,7 @@ def arg_parse():
                         choices=['weight', ''],
                         help='The setting sampler')
     
-    parser.add_argument('--epoch', type=int, default=300, help='The number of epochs')
+    parser.add_argument('--epoch', type=int, default=500, help='The number of epochs')
     parser.add_argument('--batch_size', type=int, default=32, help='The size of batch')
     parser.add_argument('--test', action="store_true", help='The size of batch')
     

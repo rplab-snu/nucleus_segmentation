@@ -5,7 +5,7 @@ import torch.nn.functional as F
 class UnetSH2D(nn.Module):
 
     def __init__(self, sh_size, feature_scale=4, n_classes=1,                 
-                 is_deconv=True, is_batchnorm=True):
+                 is_deconv=True, is_batchnorm=True, is_pool=True):
         super(UnetSH2D, self).__init__()
         print("UnetSH2D")
         filters = [64, 128, 256, 512, 1024]
@@ -13,16 +13,16 @@ class UnetSH2D(nn.Module):
 
         # downsampling
         self.conv1    = UnetSHConv2D(1, filters[0], sh_size, is_batchnorm)
-        self.maxpool1 = nn.MaxPool2d(kernel_size=2)
+        self.maxpool1 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[0], filters[0], 3, 2, 1), nn.BatchNorm2d(filters[0]), nn.ReLU(True))
 
         self.conv2    = UnetSHConv2D(filters[0], filters[1], sh_size, is_batchnorm)
-        self.maxpool2 = nn.MaxPool2d(kernel_size=2)
+        self.maxpool2 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[1], filters[1], 3, 2, 1), nn.BatchNorm2d(filters[0]), nn.ReLU(True))
 
         self.conv3    = UnetSHConv2D(filters[1], filters[2], sh_size, is_batchnorm)
-        self.maxpool3 = nn.MaxPool2d(kernel_size=2)
+        self.maxpool3 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[2], filters[2], 3, 2, 1), nn.BatchNorm2d(filters[0]), nn.ReLU(True))
 
         self.conv4    = UnetSHConv2D(filters[2], filters[3], sh_size, is_batchnorm)
-        self.maxpool4 = nn.MaxPool2d(kernel_size=2)
+        self.maxpool4 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[3], filters[3], 3, 2, 1), nn.BatchNorm2d(filters[0]), nn.ReLU(True))
 
         self.center   = UnetSHConv2D(filters[3], filters[4], sh_size, is_batchnorm)
 

@@ -30,6 +30,7 @@ def arg_parse():
     # Unet params
     parser.add_argument('--feature_scale', type=int, default=4)
     parser.add_argument('--sh_size', type=int, default=1)
+    parser.add_argument('--pool', action="store_true", help='The size of batch')
 
     # FusionNet Parameters
     parser.add_argument('--ngf',   type=int, default=32)
@@ -116,7 +117,7 @@ if __name__ == "__main__":
     elif arg.model == "unet":
         net = Unet2D(feature_scale=arg.feature_scale)
     elif arg.model == "unet_sh":
-        net = UnetSH2D(arg.sh_size, feature_scale=arg.feature_scale)        
+        net = UnetSH2D(arg.sh_size, feature_scale=arg.feature_scale, is_pool=arg.pool)        
     else:
         raise NotImplementedError("Not Implemented Model")
 

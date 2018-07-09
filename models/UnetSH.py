@@ -16,13 +16,13 @@ class UnetSH2D(nn.Module):
         self.maxpool1 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[0], filters[0], 3, 2, 1), nn.BatchNorm2d(filters[0]), nn.ReLU(True))
 
         self.conv2    = UnetSHConv2D(filters[0], filters[1], sh_size, is_batchnorm)
-        self.maxpool2 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[1], filters[1], 3, 2, 1), nn.BatchNorm2d(filters[0]), nn.ReLU(True))
+        self.maxpool2 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[1], filters[1], 3, 2, 1), nn.BatchNorm2d(filters[1]), nn.ReLU(True))
 
         self.conv3    = UnetSHConv2D(filters[1], filters[2], sh_size, is_batchnorm)
-        self.maxpool3 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[2], filters[2], 3, 2, 1), nn.BatchNorm2d(filters[0]), nn.ReLU(True))
+        self.maxpool3 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[2], filters[2], 3, 2, 1), nn.BatchNorm2d(filters[2]), nn.ReLU(True))
 
         self.conv4    = UnetSHConv2D(filters[2], filters[3], sh_size, is_batchnorm)
-        self.maxpool4 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[3], filters[3], 3, 2, 1), nn.BatchNorm2d(filters[0]), nn.ReLU(True))
+        self.maxpool4 = nn.MaxPool2d(kernel_size=2) if is_pool else nn.Sequential(nn.Conv2d(filters[3], filters[3], 3, 2, 1), nn.BatchNorm2d(filters[3]), nn.ReLU(True))
 
         self.center   = UnetSHConv2D(filters[3], filters[4], sh_size, is_batchnorm)
 

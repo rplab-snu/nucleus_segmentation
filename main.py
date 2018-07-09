@@ -95,10 +95,10 @@ if __name__ == "__main__":
 
     data_path = "dataset"
 
-    train_path = data_path + "/%s/Only_Label/Train/"%(arg.data)
-    valid_path = data_path + "/%s/Only_Label/Val/"%(arg.data)
+    train_path = data_path + "/%s/Train/"%(arg.data)
+    valid_path = data_path + "/%s/Val/"%(arg.data)
     # test_path  = data_path + "/2D/Test_FL/"
-    test_path = data_path + "/%s/Test/"%(arg.data)
+    test_path = data_path + "/Test/"
 
     preprocess = preprocess.get_preprocess(arg.augment)
 

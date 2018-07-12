@@ -17,4 +17,5 @@ build/*
 dist
 dist/*
 test.py
-
+nohup.out
+.nfs*

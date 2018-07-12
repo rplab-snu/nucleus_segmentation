@@ -26,7 +26,8 @@ class UnetRes2D(nn.Module):
 
         # upsampling
         self.up_concat2 = UnetResUpConv2D(filters[1], filters[0], 8, norm)
-        self.up_concat1 = UnetResUpConv2D(filters[0], n_classes, 8, norm)
+        self.up_concat1 = UnetResUpConv2D(filters[0], filters[0], 8, norm)
+        self.final = nn.Conv2d(filters[0], 1, 1, 1, 0) 
 
         # initialise weights
         for m in self.modules():
@@ -36,8 +37,6 @@ class UnetRes2D(nn.Module):
                 m.apply(weights_init_kaiming)
             elif isinstance(m, nn.InstanceNorm2d):
                 m.apply(weights_init_kaiming)
-            elif isinstance(m, nn.GroupNorm2d):
-                m.apply(weights_init_kaiming)
 
     def forward(self, inputs):
         conv1    = self.conv1(inputs)
@@ -46,17 +45,17 @@ class UnetRes2D(nn.Module):
         conv2    = self.conv2(maxpool1)
         maxpool2 = self.maxpool2(conv2)
 
-        center = self.center(maxpool4)
+        center = self.center(maxpool2)
 
         up2 = self.up_concat2(conv2, center)
         up1 = self.up_concat1(conv1, up2)
 
-        return up1 
+        return self.final(up1) 
 
 if __name__ == "__main__":
     import torch
     input2D = torch.randn([1, 1, 448, 448])
     print("input shape : \t", input2D.shape)
-    model = UnetSH2D(3)
+    model = UnetRes2D(1, nn.InstanceNorm2d)
     output2D = model(input2D)
     print("output shape  : \t", output2D.shape)

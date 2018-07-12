@@ -11,6 +11,7 @@ from NucleusLoader import NucleusLoader
 from models.Fusionnet import Fusionnet
 from models.unet import Unet2D
 from models.UnetSH import UnetSH2D
+from models.UnetRes import UnetRes2D
 
 from trainers.CNNTrainer import CNNTrainer
 
@@ -26,7 +27,7 @@ def arg_parse():
     parser.add_argument('--cpus', type=int, default="8",
                         help="Select CPU Number workers")
     parser.add_argument('--model', type=str, default='unet',
-                        choices=['fusion', "unet", "unet_sh"], required=True)
+                        choices=['fusion', "unet", "unet_sh", "unetres"], required=True)
     # Unet params
     parser.add_argument('--feature_scale', type=int, default=4)
     parser.add_argument('--sh_size', type=int, default=1)
@@ -93,12 +94,12 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = arg.gpus
     torch_device = torch.device("cuda")
 
-    data_path = "dataset"
+    data_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label"
 
-    train_path = data_path + "/%s/Train/"%(arg.data)
-    valid_path = data_path + "/%s/Val/"%(arg.data)
+    train_path = data_path + "/Train/"
+    valid_path = data_path + "/Val/"
     # test_path  = data_path + "/2D/Test_FL/"
-    test_path = data_path + "/Test/"
+    test_path = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL/"
 
     preprocess = preprocess.get_preprocess(arg.augment)
 
@@ -118,6 +119,8 @@ if __name__ == "__main__":
         net = Unet2D(feature_scale=arg.feature_scale)
     elif arg.model == "unet_sh":
         net = UnetSH2D(arg.sh_size, feature_scale=arg.feature_scale, is_pool=arg.pool)        
+    elif arg.model == "unetres":
+        net = UnetRes2D(1, nn.InstanceNorm2d)
     else:
         raise NotImplementedError("Not Implemented Model")
 

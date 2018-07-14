@@ -53,9 +53,7 @@ def arg_parse():
                         choices=['float', 'half'],
                         help='The torch dtype | float | half |')
 
-    parser.add_argument('--data', type=str, default='Only_Label',
-                        choices=['All', 'Balance', "Only_Label"],
-                        help='The dataset | All | Balance | Only_Label |')
+    parser.add_argument('--fold', type=str, default='')
 
     parser.add_argument('--sampler', type=str, default='',
                         choices=['weight', ''],
@@ -95,12 +93,12 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = arg.gpus
     torch_device = torch.device("cuda")
 
-    data_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label"
+    data_path = "dataset" + arg.fold
 
     train_path = data_path + "/Train/"
     valid_path = data_path + "/Val/"
     # test_path  = data_path + "/2D/Test_FL/"
-    test_path = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL/"
+    test_path = "dataset/Test/"
 
     preprocess = preprocess.get_preprocess(arg.augment)
 
@@ -138,4 +136,4 @@ if __name__ == "__main__":
         model.pre_train(train_loader, valid_loader)
         model.train(train_loader, valid_loader)
     model.test(test_loader)
-    utils.slack_alarm("zsef123", "Model %s Done"%(arg.save_dir))
+    # utils.slack_alarm("zsef123", "Model %s Done"%(arg.save_dir))

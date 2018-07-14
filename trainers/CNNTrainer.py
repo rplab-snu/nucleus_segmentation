@@ -65,7 +65,7 @@ class CNNTrainer(BaseTrainer):
     def pre_train(self, train_loader, val_loader):
         print("PretrainStart")
         cnt, f1 = 0, 0
-        while f1 < 0.87:
+        while f1 < 0.85:
             # Model Init
             self._init_model()
 

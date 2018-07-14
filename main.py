@@ -33,6 +33,7 @@ def arg_parse():
     parser.add_argument('--sh_size', type=int, default=1)
     parser.add_argument('--pool', action="store_true", help='The size of batch')
 
+
     # FusionNet Parameters
     parser.add_argument('--ngf',   type=int, default=32)
     parser.add_argument('--clamp', type=tuple, default=None)
@@ -134,6 +135,7 @@ if __name__ == "__main__":
 
     model = CNNTrainer(arg, net, torch_device, recon_loss=recon_loss)
     if arg.test is False:
+        model.pre_train(train_loader, valid_loader)
         model.train(train_loader, valid_loader)
     model.test(test_loader)
     utils.slack_alarm("zsef123", "Model %s Done"%(arg.save_dir))

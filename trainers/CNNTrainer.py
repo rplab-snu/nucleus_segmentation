@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from .BaseTrainer import BaseTrainer
+from models.layers.UnetResLayer import weights_init_kaiming
 
 from sklearn.metrics import f1_score, confusion_matrix, recall_score, jaccard_similarity_score, roc_curve, precision_recall_curve
 
@@ -17,6 +18,8 @@ class CNNTrainer(BaseTrainer):
         self.recon_loss = recon_loss
         
         self.G = G
+        self.lrG = arg.lrG
+        self.beta = arg.beta
         self.optim = torch.optim.Adam(self.G.parameters(), lr=arg.lrG, betas=arg.beta)
             
         self.best_metric = 0
@@ -52,6 +55,49 @@ class CNNTrainer(BaseTrainer):
             print("Load Model Type : %s, epoch : %d"%(ckpoint["model_type"], self.start_epoch))
         else:
             print("Load Failed, not exists file")
+
+    def _init_model(self):
+        for m in self.G.modules():
+            m.apply(weights_init_kaiming)
+        self.optim = torch.optim.Adam(self.G.parameters(), lr=self.lrG, betas=self.beta)
+
+
+    def pre_train(self, train_loader, val_loader):
+        print("PretrainStart")
+        cnt, f1 = 0, 0
+        while f1 < 0.87:
+            # Model Init
+            self._init_model()
+
+
+            for epoch in range(3):
+                for i, (input_, target_, _) in enumerate(train_loader):    
+                    self.G.train()
+                    input_, target_ = input_.to(self.torch_device), target_.to(self.torch_device)
+                    output_ = self.G(input_)
+                    recon_loss = self.recon_loss(output_, target_)
+                
+                    self.optim.zero_grad()
+                    recon_loss.backward()
+                    self.optim.step()
+
+            self.G.eval()
+            with torch.no_grad():
+                confusions_sum = [0, 0, 0, 0]
+                # F1(per dataset) , JSS, Dice(per image)
+                for i, (input_, target_, _) in enumerate(val_loader):
+                    _, output_, target_ = self._test_foward(input_, target_)
+
+                    target_np = utils.slice_threshold(target_, 0.5)
+                    output_np = utils.slice_threshold(output_, 0.5)
+                    target_f, output_f = target_np.flatten(), output_np.flatten()
+                    
+                    # element wise sum
+                    confusions_sum += confusion_matrix(target_f, output_f).ravel()
+
+                f1 = utils.get_roc_pr(*confusions_sum)[-2]
+            cnt += 1
+            print("[Cnt:%d] val_f1:%f"%(cnt, f1))
 
 
     def train(self, train_loader, val_loader=None):

@@ -2,6 +2,7 @@ import torch.nn as nn
 from models.layers.UnetResLayer import UnetResConv2D, UnetResUpConv2D, weights_init_kaiming, SpatialBridge
 import torch.nn.functional as F
 
+
 class UnetRes2D(nn.Module):
 
     def __init__(self, n_classes, norm):
@@ -37,6 +38,8 @@ class UnetRes2D(nn.Module):
                 m.apply(weights_init_kaiming)
             elif isinstance(m, nn.InstanceNorm2d):
                 m.apply(weights_init_kaiming)
+            elif isinstance(m, nn.GroupNorm):
+                m.apply(weights_init_kaiming)
 
     def forward(self, inputs):
         conv1    = self.conv1(inputs)
@@ -54,8 +57,11 @@ class UnetRes2D(nn.Module):
 
 if __name__ == "__main__":
     import torch
-    input2D = torch.randn([1, 1, 448, 448])
+    device = torch.device("cpu")
+    input2D = torch.randn([1, 1, 448, 448]).to(device)
     print("input shape : \t", input2D.shape)
     model = UnetRes2D(1, nn.InstanceNorm2d)
-    output2D = model(input2D)
+    output2D = model(input2D).to(device)
     print("output shape  : \t", output2D.shape)
+    from torchsummary import summary
+    summary(model, input_size=(1, 448, 448))

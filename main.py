@@ -107,7 +107,7 @@ if __name__ == "__main__":
     train_loader = NucleusLoader(train_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
                                  torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=True, drop_last=True)
-    valid_loader = NucleusLoader(valid_path, 1, transform=preprocess, sampler=arg.sampler,
+    valid_loader = NucleusLoader(valid_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
                                  torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=False)
     test_loader  = NucleusLoader(test_path, 1,

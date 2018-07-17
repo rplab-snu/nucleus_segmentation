@@ -23,41 +23,39 @@ class FocalLoss(nn.Module):
         
         return loss.mean()
 
-class TverskyLoss(nn.Module):
+class TverskyLoss:
     def __init__(self, alpha, torch_device):
-        super().__init__()
-        self.alpha = alpha
-        self.beta  = 1 - alpha 
-        self.smooth = 1.0
+        # super(TverskyLoss, self).__init__()
+        self.a = alpha
+        self.b = 1 - alpha 
+        self.smooth = torch.tensor(1.0, device=torch_device)
 
-    def forward(self, target_, output_):
-        output_ = F.sigmoid(output_)
+    def __call__(self, predict, target_):
+        predict = F.sigmoid(predict)
+        target_f  = target_.view(-1) # g
+        predict_f = predict.view(-1) # p
 
-        target_f = target_.contiguous().view(-1)
-        output_f = output_.contiguous().view(-1)
+        # PG + a * P_G + b * G_P        
+        PG  = (predict_f * target_f).sum() # p0g0
+        P_G = (predict_f * (1 - target_f)).sum() * self.a # p0g1
+        G_P = ((1 - predict_f) * target_f).sum() * self.b # p1g0
 
-        """
-        P : set of predicted, G : ground truth label
-        Tversky Index S is
-        S(P, G; a, b) = PG / (PG + aP\G + bG\P)
+        loss = PG / (PG + P_G + G_P + self.smooth)
+        return loss * -1
 
-        Tversky Loss T is
-        PG = sum of P * G
-        G\P = sum of G not P
-        P\G = sum of P not G
-        T(a, b) = PG / (PG + aG\P + bP\G)
-        """
-
-        PG = (target_f * output_f).sum()
-        G_P = ((1 - target_f) * output_f).sum()
-        P_G = ((1 - output_f) * target_f).sum()
-
-        loss = (PG + self.smooth) / (PG + (self.alpha * G_P) + (self.beta * P_G) + self.smooth)
-        return loss
 
 if __name__ == "__main__":
-    target = torch.tensor([[0,1,0],[1,1,1],[0,1,0]], dtype=torch.float)
-    output = torch.tensor([[1,1,0],[0,0,0],[1,0,0]], dtype=torch.float)
+
+    def get_grad(*args):
+        print("Grad : \n", args)
+        
+
+    target = torch.tensor([[[0,1,0],[1,1,1],[0,1,0]]], dtype=torch.float, requires_grad=True)
+    predicted = torch.tensor([[[1,1,0],[0,0,0],[1,0,0]]], dtype=torch.float, requires_grad=True)
+    print("Prediction : \n", predicted); print("GroudTruth : \n", target)
+    predicted.register_hook(get_grad)
 
     loss = TverskyLoss(0.3, torch.device("cpu"))
-    print("Loss : ", loss(target, output))
+    l = loss(predicted, target)
+    print("Loss : ", l)
+    l.backward()

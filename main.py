@@ -93,12 +93,18 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = arg.gpus
     torch_device = torch.device("cuda")
 
-    data_path = "dataset" + arg.fold
+    """
+    data_path = "/data/00_Nuclues_segmentation/DW" + arg.fold
 
-    train_path = data_path + "/Train/"
-    valid_path = data_path + "/Val/"
+    train_path = "%s/dataset%s/Train/"%(data_path, arg.fold)
+    valid_path = "%s/dataset%s/Val/"%(data_path, arg.fold)
     # test_path  = data_path + "/2D/Test_FL/"
     test_path = "dataset/Test/"
+    """
+    train_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label/Train"
+    valid_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label/Val"
+    #test_path  = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL"
+    test_path = "/home/joy/project/nuclear/dataset/test"
 
     preprocess = preprocess.get_preprocess(arg.augment)
 
@@ -113,7 +119,7 @@ if __name__ == "__main__":
                                  shuffle=False, drop_last=False)
 
     if arg.model == "fusion":
-        net = Fusionnet(arg.in_channel, arg.out_channel, arg.ngf, arg.clamp)
+        net = Fusionnet(1, 1, arg.ngf, arg.clamp)
     elif arg.model == "unet":
         net = Unet2D(feature_scale=arg.feature_scale)
     elif arg.model == "unet_sh":
@@ -133,7 +139,7 @@ if __name__ == "__main__":
 
     model = CNNTrainer(arg, net, torch_device, recon_loss=recon_loss)
     if arg.test is False:
-        model.pre_train(train_loader, valid_loader)
+        # model.pre_train(train_loader, valid_loader)
         model.train(train_loader, valid_loader)
     model.test(test_loader)
     # utils.slack_alarm("zsef123", "Model %s Done"%(arg.save_dir))

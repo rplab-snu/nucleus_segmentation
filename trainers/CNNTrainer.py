@@ -137,23 +137,26 @@ class CNNTrainer(BaseTrainer):
             confusions_sum = [0, 0, 0, 0]
             dice, jss = 0, 0
             # F1(per dataset) , JSS, Dice(per image)
+            cnt = 1
             for i, (input_, target_, _) in enumerate(val_loader):
                 _, output_, target_ = self._test_foward(input_, target_)
 
                 target_np = utils.slice_threshold(target_, 0.5)
                 output_np = utils.slice_threshold(output_, 0.5)
-                target_f, output_f = target_np.flatten(), output_np.flatten()
-                
-                # element wise sum
-                confusions     =  confusion_matrix(target_f, output_f).ravel()
-                confusions_sum += confusions
-                score = utils.get_roc_pr(*confusions)
-                dice += score[-2]
-                jss  += score[-1]
+                for b in range(target_.shape[0]):
+                    target_f, output_f = target_np[b].flatten(), output_np[b].flatten()
+                    
+                    # element wise sum
+                    confusions     =  confusion_matrix(target_f, output_f).ravel()
+                    confusions_sum += confusions
+                    score = utils.get_roc_pr(*confusions)
+                    dice += score[-2]
+                    jss  += score[-1]
+                    cnt += 1
 
             f1   = utils.get_roc_pr(*confusions_sum)[-2]
-            jss  /= len(val_loader.dataset) 
-            dice /= len(val_loader.dataset)
+            jss  /= cnt
+            dice /= cnt
 
             if f1 > self.best_metric:
                 self.best_metric = f1

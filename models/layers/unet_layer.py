@@ -26,8 +26,8 @@ class ConvBNReLU(nn.Module):
 class UnetConv2D(nn.Module):
     def __init__(self, in_size, out_size, norm, kernel_size=3, stride=1, padding=1):
         super(UnetConv2D, self).__init__()
-            self.conv1 = ConvBNReLU(in_size, out_size, norm, kernel_size, stride, padding)
-            self.conv2 = ConvBNReLU(in_size, out_size, norm, kernel_size, 1, padding)
+        self.conv1 = ConvBNReLU(in_size, out_size, norm, kernel_size, stride, padding)
+        self.conv2 = ConvBNReLU(in_size, out_size, norm, kernel_size, 1, padding)
 
         # initialise the blocks
         for m in self.children():

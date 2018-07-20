@@ -19,7 +19,7 @@ def weights_init_kaiming(m):
 
 class ConvNormReLU(nn.Module):
     def __init__(self, in_c, out_c, norm, kernel_size=3, stride=1, padding=1, group=1):
-        super(ConvBNReLU, self).__init__()
+        super(ConvNormReLU, self).__init__()
         self.conv1 = nn.Sequential(nn.Conv2d(in_c, out_c, kernel_size, stride, padding),
                                    norm(out_c),
                                    nn.ReLU(inplace=True),)
@@ -32,7 +32,7 @@ class GroupBlock(nn.Module):
     def __init__(self, in_c, hidden_c, out_c, norm, group):
         super(GroupBlock, self).__init__()
         self.conv1 = ConvNormReLU(in_c, hidden_c, norm, 1, 1, 0)
-        self.gconv = ConvNormReLU(hidden_c, hidden_c, norm, 3, 1, 0, group)
+        self.gconv = ConvNormReLU(hidden_c, hidden_c, norm, 3, 1, 1, group)
         self.conv3 = ConvNormReLU(hidden_c, out_c, norm, 1, 1, 0)
 
     def forward(self, x):
@@ -45,7 +45,7 @@ class UnetResConv2D(nn.Module):
     def __init__(self, in_c, out_c, norm, group, kernel_size=3, stride=1, padding=1):
         super(UnetResConv2D, self).__init__()
         self.conv1 = ConvNormReLU(in_c, out_c, norm, kernel_size, stride, padding)        
-        self.group = GroupBlock(out_c, out_c, out_c, group, norm)
+        self.group = GroupBlock(out_c, out_c // 2, out_c, norm, group)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -54,21 +54,22 @@ class UnetResConv2D(nn.Module):
 
 
 class UnetResUpConv2D(nn.Module):
-    def __init__(self, in_c, out_c, group, norm):
+    def __init__(self, in_c, out_c, norm, group):
         super(UnetResUpConv2D, self).__init__()
 
-        self.up = nn.ConvTranspose2d(in_c, in_c, 
+        self.up = nn.ConvTranspose2d(in_c, out_c, 
                                      kernel_size=3, stride=2, padding=1,
                                      output_padding=1)
-        self.conv = ConvNormReLU(in_c * 2, out_c, 3, 1, 1)
-        self.res = GroupBlock(out_c, out_c//2, out_c, group, norm)
+        self.conv = ConvNormReLU(in_c, out_c, norm, 3, 1, 1)
+        self.group = GroupBlock(out_c, out_c // 2, out_c, norm, group)
 
     def forward(self, x1, x2):
-        output2 = self.up(x2)
-        offset  = output2.size()[2] - x1.size()[2]
+        x2 = self.up(x2)
+        offset  = x2.size()[2] - x1.size()[2]
         padding = [offset // 2] * 4
-        output1 = F.pad(x1, padding)
-        output  = torch.cat([output1, output2], 1)
-        output  = self.conv(output)
-        return output + self.res(output)
+        x1 = F.pad(x1, padding)
+
+        x = torch.cat([x1, x2], 1)
+        x = self.conv(x)
+        return x + self.group(x)
 

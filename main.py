@@ -121,11 +121,11 @@ if __name__ == "__main__":
     if arg.model == "fusion":
         net = Fusionnet(1, 1, arg.ngf, arg.clamp)
     elif arg.model == "unet":
-        net = Unet2D(feature_scale=arg.feature_scale)
+        net = Unet2D(feature_scale=arg.feature_scale, is_pool=arg.pool)
     elif arg.model == "unet_sh":
         net = UnetSH2D(arg.sh_size, feature_scale=arg.feature_scale, is_pool=arg.pool)        
     elif arg.model == "unetres":
-        net = UnetRes2D(1, nn.InstanceNorm2d)
+        net = UnetRes2D(1, nn.InstanceNorm2d, is_pool=arg.pool)
     else:
         raise NotImplementedError("Not Implemented Model")
 

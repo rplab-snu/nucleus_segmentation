@@ -1,5 +1,5 @@
 import torch.nn as nn
-from models.layers.unet_layer import UnetConv2D, UnetUpConv2D, weights_init_kaiming, ConvBNReLU
+from layers.unet_layer import UnetConv2D, UnetUpConv2D, weights_init_kaiming, ConvBNReLU
 import torch.nn.functional as F
 
 class Unet2D(nn.Module):
@@ -66,7 +66,8 @@ class Unet2D(nn.Module):
         return final
 
 if __name__ == "__main__":
-    input2D = torch.Tensor([1, 1, 448, 448])
+    import torch
+    input2D = torch.randn([1, 1, 448, 448])
     model = Unet2D()
     output2D = model(input2D)
     

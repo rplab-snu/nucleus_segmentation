@@ -19,6 +19,9 @@ class ConvBNReLU(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(in_size, out_size, kernel_size, stride, padding),
                                    norm(out_size),
                                    nn.ReLU(inplace=True),)
+        # initialise the blocks
+        for m in self.children():
+            m.apply(weights_init_kaiming)
         
     def forward(self, inputs):
         return self.conv1(inputs)
@@ -27,11 +30,8 @@ class UnetConv2D(nn.Module):
     def __init__(self, in_size, out_size, norm, kernel_size=3, stride=1, padding=1):
         super(UnetConv2D, self).__init__()
         self.conv1 = ConvBNReLU(in_size, out_size, norm, kernel_size, stride, padding)
-        self.conv2 = ConvBNReLU(in_size, out_size, norm, kernel_size, 1, padding)
+        self.conv2 = ConvBNReLU(out_size, out_size, norm, kernel_size, 1, padding)
 
-        # initialise the blocks
-        for m in self.children():
-            m.apply(weights_init_kaiming)
 
     def forward(self, inputs):
         x = self.conv1(inputs)

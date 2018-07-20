@@ -103,8 +103,8 @@ if __name__ == "__main__":
     """
     train_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label/Train"
     valid_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label/Val"
-    #test_path  = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL"
-    test_path = "/home/joy/project/nuclear/dataset/test"
+    test_path  = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL"
+    # test_path = "/home/joy/project/nuclear/dataset/test"
 
     preprocess = preprocess.get_preprocess(arg.augment)
 

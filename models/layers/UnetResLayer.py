@@ -17,54 +17,51 @@ def weights_init_kaiming(m):
         nn.init.constant_(m.bias.data, 0.0)
 
 
-class Residual(nn.Module):
-    def __init__(self, in_c, hidden_c, out_c, group, norm, dilate=1):
-        super(Residual, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(in_c, hidden_c, 1, 1, 0),
-                                   nn.GroupNorm(32, hidden_c),
+class ConvNormReLU(nn.Module):
+    def __init__(self, in_c, out_c, norm, kernel_size=3, stride=1, padding=1, group=1):
+        super(ConvBNReLU, self).__init__()
+        self.conv1 = nn.Sequential(nn.Conv2d(in_c, out_c, kernel_size, stride, padding),
+                                   norm(out_c),
                                    nn.ReLU(inplace=True),)
+        
+    def forward(self, inputs):
+        return self.conv1(inputs)
 
 
-        self.conv2 = nn.Sequential(nn.Conv2d(hidden_c, hidden_c, 3, 1, dilate, dilate, group),
-                                   nn.GroupNorm(32, hidden_c),
-                                   nn.ReLU(inplace=True),)
-
-        self.conv3 = nn.Sequential(nn.Conv2d(hidden_c, out_c, 1, 1, 0),
-                                   nn.GroupNorm(32, out_c),
-                                   nn.ReLU(inplace=True),)
+class GroupBlock(nn.Module):
+    def __init__(self, in_c, hidden_c, out_c, norm, group):
+        super(GroupBlock, self).__init__()
+        self.conv1 = ConvNormReLU(in_c, hidden_c, norm, 1, 1, 0)
+        self.gconv = ConvNormReLU(hidden_c, hidden_c, norm, 3, 1, 0, group)
+        self.conv3 = ConvNormReLU(hidden_c, out_c, norm, 1, 1, 0)
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.conv2(x)
+        x = self.gconv(x)
         return self.conv3(x)
 
 
 class UnetResConv2D(nn.Module):
-    def __init__(self, in_size, out_size, group, norm, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_c, out_c, norm, group, kernel_size=3, stride=1, padding=1):
         super(UnetResConv2D, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(in_size, out_size, kernel_size, stride, padding),
-                                   nn.GroupNorm(32, out_size),
-                                   nn.ReLU(inplace=True),)
-        self.res = Residual(out_size, out_size, out_size, group, norm)
+        self.conv1 = ConvNormReLU(in_c, out_c, norm, kernel_size, stride, padding)        
+        self.group = GroupBlock(out_c, out_c, out_c, group, norm)
 
     def forward(self, x):
         x = self.conv1(x)
-        y = self.res(x)
+        y = self.group(x)
         return x + y
 
 
 class UnetResUpConv2D(nn.Module):
-    def __init__(self, in_size, out_size, group, norm):
+    def __init__(self, in_c, out_c, group, norm):
         super(UnetResUpConv2D, self).__init__()
 
-        self.up = nn.ConvTranspose2d(in_size, in_size, 
+        self.up = nn.ConvTranspose2d(in_c, in_c, 
                                      kernel_size=3, stride=2, padding=1,
                                      output_padding=1)
-
-        self.conv = nn.Sequential(nn.Conv2d(in_size * 2, out_size, 3, 1, 1),
-                                  nn.GroupNorm(32, out_size),
-                                  nn.ReLU(inplace=True),)
-        self.res = Residual(out_size, out_size//2, out_size, group, norm)
+        self.conv = ConvNormReLU(in_c * 2, out_c, 3, 1, 1)
+        self.res = GroupBlock(out_c, out_c//2, out_c, group, norm)
 
     def forward(self, x1, x2):
         output2 = self.up(x2)
@@ -74,37 +71,4 @@ class UnetResUpConv2D(nn.Module):
         output  = torch.cat([output1, output2], 1)
         output  = self.conv(output)
         return output + self.res(output)
-
-class SpatialBridge(nn.Module):
-    def __init__(self, in_c, dilates, groups, norm):
-        super(SpatialBridge, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(in_c, in_c * 2, 3, 1, 1),
-                                   nn.GroupNorm(32, in_c * 2),
-                                   nn.ReLU(inplace=True))
-
-        self.b1 = Residual(in_c * 2, in_c * 2, in_c * 2, groups[0], norm, dilates[0])
-               
-        self.conv2 = nn.Sequential(nn.Conv2d(in_c * 2, in_c * 4, 3, 1, 1),
-                                   nn.GroupNorm(32, in_c * 4),
-                                   nn.ReLU(inplace=True))
-        self.b2 = Residual(in_c * 4, in_c * 4, in_c * 4, groups[1], norm, dilates[1])
-
-        self.conv3 = nn.Sequential(nn.Conv2d(in_c * 4, in_c * 8, 3, 1, 1),
-                                   nn.GroupNorm(32, in_c * 8),
-                                   nn.ReLU(inplace=True))
-        self.b3 = Residual(in_c * 8, in_c * 8, in_c * 8, groups[2], norm, dilates[2])
-
-        self.cat = nn.Sequential(nn.Conv2d(in_c * 8, in_c, 1, 1, 0),
-                                 nn.GroupNorm(32, in_c),
-                                 nn.ReLU(inplace=True))
-    def forward(self, x):
-        x = self.conv1(x)
-        y = self.b1(x)
-
-        x = self.conv2(x + y)
-        y = self.b2(x)
-
-        x = self.conv3(x + y)
-        y = self.b3(x)
-        return self.cat(x)
 

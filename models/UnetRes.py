@@ -1,33 +1,36 @@
 import torch.nn as nn
-from models.layers.UnetResLayer import UnetResConv2D, UnetResUpConv2D, weights_init_kaiming, SpatialBridge
+from models.layers.UnetResLayer import UnetResConv2D, UnetResUpConv2D, weights_init_kaiming, ConvNormReLU
 import torch.nn.functional as F
 
 
 class UnetRes2D(nn.Module):
 
-    def __init__(self, n_classes, norm):
+    def __init__(self, n_classes, norm, is_pool=False):
         super(UnetRes2D, self).__init__()
-        print("UnetRes2D Pool")
-        filters = [64, 128]
+        print("UnetRes2D")
+        ch = [16, 32, 64, 128, 256]
 
         # downsampling
-        self.conv1    = UnetResConv2D(1, filters[0], 8, norm)
-        self.maxpool1 = nn.Sequential(nn.Conv2d(filters[0], filters[0], 3, 2, 1),
-                                      norm(filters[0]),
-                                      nn.ReLU(True))
+        self.conv1    = UnetResConv2D(1, ch[0], norm, ch[0] / 8)
+        self.maxpool1 = nn.MaxPool2d(2) if is_pool else ConvNormReLU(ch[0], ch[0], norm, stride=2)
 
-        self.conv2    = UnetResConv2D(filters[0], filters[1], 16, norm)
-        self.maxpool2 = nn.Sequential(nn.Conv2d(filters[1], filters[1], 3, 2, 1), 
-                                      norm(filters[1]),
-                                      nn.ReLU(True))
+        self.conv2    = UnetResConv2D(ch[0], ch[1], norm, ch[1] / 8)
+        self.maxpool2 = nn.MaxPool2d(2) if is_pool else ConvNormReLU(ch[1], ch[1], norm, stride=2)
 
-        dilates = [1, 2, 5]
-        groups  = [32, 64, 128]
-        self.center   = SpatialBridge(filters[1], dilates, groups, norm)
+        self.conv3    = UnetResConv2D(ch[1], ch[2], norm, ch[2] / 8)
+        self.maxpool3 = nn.MaxPool2d(2) if is_pool else ConvNormReLU(ch[2], ch[2], norm, stride=2)
 
+        self.conv4    = UnetResConv2D(ch[2], ch[3], norm, ch[3] / 8)
+        self.maxpool4 = nn.MaxPool2d(2) if is_pool else ConvNormReLU(ch[3], ch[3], norm, stride=2)
+
+        self.center = UnetResConv2D(ch[3], ch[4], norm, ch[4] / 8)
         # upsampling
-        self.up_concat2 = UnetResUpConv2D(filters[1], filters[0], 8, norm)
-        self.up_concat1 = UnetResUpConv2D(filters[0], filters[0], 8, norm)
+        #                                                         group size
+        self.up_concat4 = UnetResUpConv2D(filters[4], filters[3], filters[3] / 8, norm)
+        self.up_concat3 = UnetResUpConv2D(filters[3], filters[2], filters[2] / 8, norm)
+        self.up_concat2 = UnetResUpConv2D(filters[2], filters[1], filters[1] / 8, norm)
+        self.up_concat1 = UnetResUpConv2D(filters[1], filters[0], filters[0] / 8, norm)
+
         self.final = nn.Conv2d(filters[0], 1, 1, 1, 0) 
 
         # initialise weights
@@ -48,9 +51,17 @@ class UnetRes2D(nn.Module):
         conv2    = self.conv2(maxpool1)
         maxpool2 = self.maxpool2(conv2)
 
+        conv3    = self.conv2(maxpool2)
+        maxpool3 = self.maxpool2(conv3)
+
+        conv4    = self.conv2(maxpool3)
+        maxpool4 = self.maxpool2(conv4)
+
         center = self.center(maxpool2)
 
-        up2 = self.up_concat2(conv2, center)
+        up4 = self.up_concat4(conv4, center)
+        up3 = self.up_concat3(conv3, up4)
+        up2 = self.up_concat2(conv2, up3)
         up1 = self.up_concat1(conv1, up2)
 
         return self.final(up1) 

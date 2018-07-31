@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 def conv_block(in_dim,out_dim,act_fn,stride=1):
     model = nn.Sequential(
         nn.Conv2d(in_dim, out_dim, kernel_size=3, stride=stride, padding=1),
@@ -8,6 +9,7 @@ def conv_block(in_dim,out_dim,act_fn,stride=1):
         act_fn,
     )
     return model
+
 
 def conv_trans_block(in_dim,out_dim,act_fn):
     model = nn.Sequential(
@@ -17,6 +19,7 @@ def conv_trans_block(in_dim,out_dim,act_fn):
     )
     return model
 
+
 def conv_block_3(in_dim,out_dim,act_fn):
     model = nn.Sequential(
         conv_block(in_dim,out_dim,act_fn),
@@ -25,7 +28,8 @@ def conv_block_3(in_dim,out_dim,act_fn):
         nn.BatchNorm2d(out_dim),
     )
     return model
-    
+
+
 class Conv_residual_conv(nn.Module):
     def __init__(self, in_dim, out_dim, act_fn):
         super(Conv_residual_conv, self).__init__()
@@ -57,7 +61,6 @@ class Fusionnet(nn.Module):
 
         act_fn = nn.LeakyReLU(0.2, inplace=True)
         act_fn_2 = nn.ELU(inplace=True)
-
 
         # encoder
         self.down_1 = Conv_residual_conv(self.in_dim, self.out_dim, act_fn)
@@ -94,10 +97,10 @@ class Fusionnet(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.normal_(1.0, 0.02)
                 m.bias.data.fill_(0)
-                
+
         print("------FusionNet Init Done------")
 
-    def forward(self, input):        
+    def forward(self, input):
         down_1 = self.down_1(input)
         pool_1 = self.pool_1(down_1)
         down_2 = self.down_2(pool_1)

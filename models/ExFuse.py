@@ -104,10 +104,10 @@ class DAP(nn.Module):
              (1, max_i + 1, 0, max_j), (1, max_i + 1, 1, max_j + 1), (1, max_i + 1, 2, max_j + 2),
              (2, max_i + 2, 0, max_j), (2, max_i + 2, 1, max_j + 1), (2, max_i + 2, 2, max_j + 2)]
 
-        R = torch.zeros([batch, input_c, self.k2, max_i * max_j])
+        R = torch.zeros([batch, input_c, self.k2, max_i * max_j]).cuda()
         for dap_c in range(input_c):
             for c, (s_i, e_i, s_j, e_j) in enumerate(a):
-                R[:, dap_c, c] = x[:, c, s_i:e_i, s_j:e_j].contiguous().view(batch, 1, -1)
+                R[:, dap_c, c] = x[:, c, s_i:e_i, s_j:e_j].contiguous().view(batch, -1)
 
         R = torch.mean(R, 2).reshape(batch, input_c, max_i, max_j)
         return R
@@ -150,6 +150,9 @@ class ExFuse(nn.Module):
         self.out = nn.Conv2d(21, 1, 1)
 
     def forward(self, input_):
+        if input_.shape[1] == 1:
+            input_ = torch.cat([input_, input_, input_], dim=1)
+        print(input_.shape)
         x = self.conv1(input_)
         level1 = self.res2(x)
         level2 = self.res3(level1)

@@ -97,11 +97,10 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = arg.gpus
     torch_device = torch.device("cuda")
 
-    """
-    data_path = "/data/00_Nuclues_segmentation/DW" + arg.fold
+    # data_path = "/data/00_Nuclues_segmentation/DW" + arg.fold
 
-    train_path = "%s/dataset%s/Train/"%(data_path, arg.fold)
-    valid_path = "%s/dataset%s/Val/"%(data_path, arg.fold)
+    train_path = "dataset/dataset%s/Train/"%(arg.fold)
+    valid_path = "dataset/dataset%s/Val/"%(arg.fold)
     # test_path  = data_path + "/2D/Test_FL/"
     test_path = "dataset/Test/"
     """
@@ -109,6 +108,7 @@ if __name__ == "__main__":
     valid_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label/Val"
     test_path = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL"
     # test_path = "/home/joy/project/nuclear/dataset/test"
+    """
 
     preprocess = preprocess.get_preprocess(arg.augment)
 

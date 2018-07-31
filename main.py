@@ -13,7 +13,7 @@ from models.unet import Unet2D
 from models.UnetSH import UnetSH2D
 from models.UnetRes import UnetRes2D
 from models.ExFuse import ExFuse
-from models.Resnet import resnet50
+from models.Resnet import resnet101
 
 from trainers.CNNTrainer import CNNTrainer
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     elif arg.model == "unetres":
         net = UnetRes2D(1, nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "exfuse":
-        resnet = resnet50(pretrained=True)
+        resnet = resnet101(pretrained=True)
         net = ExFuse(resnet)
     else:
         raise NotImplementedError("Not Implemented Model")

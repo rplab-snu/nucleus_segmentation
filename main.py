@@ -12,12 +12,16 @@ from models.Fusionnet import Fusionnet
 from models.unet import Unet2D
 from models.UnetSH import UnetSH2D
 from models.UnetRes import UnetRes2D
+from models.ExFuse import ExFuse
+from models.Resnet import resnet50
 
 from trainers.CNNTrainer import CNNTrainer
 
 from loss import FocalLoss, TverskyLoss
 
 """parsing and configuration"""
+
+
 def arg_parse():
     desc = "Nucleus Segmentation"
     parser = argparse.ArgumentParser(description=desc)
@@ -27,12 +31,11 @@ def arg_parse():
     parser.add_argument('--cpus', type=int, default="8",
                         help="Select CPU Number workers")
     parser.add_argument('--model', type=str, default='unet',
-                        choices=['fusion', "unet", "unet_sh", "unetres"], required=True)
+                        choices=['fusion', "unet", "unet_sh", "unetres", "exfuse"], required=True)
     # Unet params
     parser.add_argument('--feature_scale', type=int, default=4)
     parser.add_argument('--sh_size', type=int, default=1)
     parser.add_argument('--pool', action="store_true", help='The size of batch')
-
 
     # FusionNet Parameters
     parser.add_argument('--ngf',   type=int, default=32)
@@ -47,7 +50,6 @@ def arg_parse():
     # Loss Params
     parser.add_argument('--focal_gamma', type=float, default='2', help='')
     parser.add_argument('--t_alpha', type=float, default='0.3', help='')
-
 
     parser.add_argument('--dtype', type=str, default='float',
                         choices=['float', 'half'],
@@ -72,6 +74,7 @@ def arg_parse():
 
     return parser.parse_args()
 
+
 def arg_check(arg):
     if len(arg.gpus) <= 0:
         raise argparse.ArgumentTypeError("gpus must be 0,1,2 or 2,3,4 ...")
@@ -82,9 +85,10 @@ def arg_check(arg):
     check_dict = [("cpus", arg.cpus), ("epoch", arg.epoch), ("batch", arg.batch_size), ("ngf", arg.ngf), ("lrG", arg.lrG)]
     for chk in check_dict:
         if chk[1] <= 0:
-            raise argparse.ArgumentTypeError("%s <= 0"%(chk[0]))
+            raise argparse.ArgumentTypeError("%s <= 0" % (chk[0]))
     if arg.beta[0] <= 0 or arg.beta[1] <= 0:
         raise argparse.ArgumentTypeError("betas <= 0")
+
 
 if __name__ == "__main__":
     arg = arg_parse()
@@ -103,7 +107,7 @@ if __name__ == "__main__":
     """
     train_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label/Train"
     valid_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label/Val"
-    test_path  = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL"
+    test_path = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL"
     # test_path = "/home/joy/project/nuclear/dataset/test"
 
     preprocess = preprocess.get_preprocess(arg.augment)
@@ -114,18 +118,21 @@ if __name__ == "__main__":
     valid_loader = NucleusLoader(valid_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
                                  torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=False)
-    test_loader  = NucleusLoader(test_path, 1,
-                                 torch_type=arg.dtype, cpus=arg.cpus,
-                                 shuffle=False, drop_last=False)
+    test_loader = NucleusLoader(test_path, 1,
+                                torch_type=arg.dtype, cpus=arg.cpus,
+                                shuffle=False, drop_last=False)
 
     if arg.model == "fusion":
         net = Fusionnet(1, 1, arg.ngf, arg.clamp)
     elif arg.model == "unet":
         net = Unet2D(feature_scale=arg.feature_scale, is_pool=arg.pool)
     elif arg.model == "unet_sh":
-        net = UnetSH2D(arg.sh_size, feature_scale=arg.feature_scale, is_pool=arg.pool)        
+        net = UnetSH2D(arg.sh_size, feature_scale=arg.feature_scale, is_pool=arg.pool)
     elif arg.model == "unetres":
         net = UnetRes2D(1, nn.InstanceNorm2d, is_pool=arg.pool)
+    elif arg.model == "exfuse":
+        resnet = resnet50(pretrained=True)
+        net = ExFuse(resnet)
     else:
         raise NotImplementedError("Not Implemented Model")
 

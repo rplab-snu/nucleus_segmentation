@@ -8,7 +8,7 @@ class UnetGCN(nn.Module):
 
     def __init__(self, feature_scale=4, n_classes=1,
                  is_deconv=True, norm=nn.InstanceNorm2d, is_pool=True):
-        super(Unet2D, self).__init__()
+        super(UnetGCN, self).__init__()
         filters = [64, 128, 256, 512, 1024]
         filters = [x // feature_scale for x in filters]
 
@@ -79,7 +79,7 @@ class UnetGCNSEB(nn.Module):
 
     def __init__(self, feature_scale=4, n_classes=1,
                  is_deconv=True, norm=nn.InstanceNorm2d, is_pool=True):
-        super(Unet2D, self).__init__()
+        super(UnetGCNSEB, self).__init__()
         filters = [64, 128, 256, 512, 1024]
         filters = [x // feature_scale for x in filters]
 
@@ -171,7 +171,7 @@ class UnetGCNECRE(nn.Module):
 
     def __init__(self, feature_scale=4, n_classes=1,
                  is_deconv=True, norm=nn.InstanceNorm2d, is_pool=True):
-        super(Unet2D, self).__init__()
+        super(UnetGCNECRE, self).__init__()
         filters = [64, 128, 256, 512, 1024]
         filters = [x // feature_scale for x in filters]
 
@@ -241,7 +241,7 @@ class UnetExFuse(nn.Module):
 
     def __init__(self, feature_scale=4, n_classes=1,
                  is_deconv=True, norm=nn.InstanceNorm2d, is_pool=True):
-        super(ExFuse, self).__init__()
+        super(UnetExFuse, self).__init__()
         filters = [64, 128, 256, 512, 1024]
         filters = [x // feature_scale for x in filters]
 

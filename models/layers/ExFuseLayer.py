@@ -22,8 +22,6 @@ class SEB(nn.Module):
         super(SEB, self).__init__()
         self.conv = CNA(high_feature_c, low_feature_c)
         self.up = nn.UpsamplingBilinear2d(scale_factor=up_scale)
-        self.up_mode = up_mode
-        self.up_scale = up_scale
 
     def forward(self, low_feature, high_feature):
         high_feature = self.conv(high_feature)

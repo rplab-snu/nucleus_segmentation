@@ -14,7 +14,7 @@ from models.UnetSH import UnetSH2D
 from models.UnetRes import UnetRes2D
 from models.ExFuse import ExFuse
 from models.Resnet import resnet101
-from models.UnetExFuse import UnetGCN, UnetGCNECRE, UnetGCNSEB
+from models.UnetExFuse import UnetGCN, UnetGCNECRE, UnetGCNSEB, UnetExFuse
 
 from trainers.CNNTrainer import CNNTrainer
 
@@ -32,7 +32,7 @@ def arg_parse():
     parser.add_argument('--cpus', type=int, default="8",
                         help="Select CPU Number workers")
     parser.add_argument('--model', type=str, default='unet',
-                        choices=['fusion', "unet", "unet_sh", "unetres", "exfuse", "unetgcn", "unetgcnseb", "unetgcnecre"], required=True)
+                        choices=['fusion', "unet", "unet_sh", "unetres", "exfuse", "unetgcn", "unetgcnseb", "unetgcnecre", "unetexfuse"], required=True)
     # Unet params
     parser.add_argument('--feature_scale', type=int, default=4)
     parser.add_argument('--sh_size', type=int, default=1)
@@ -100,8 +100,8 @@ if __name__ == "__main__":
 
     # data_path = "/data/00_Nuclues_segmentation/DW" + arg.fold
 
-    train_path = "dataset/dataset%s/Train/"%(arg.fold)
-    valid_path = "dataset/dataset%s/Val/"%(arg.fold)
+    train_path = "dataset/dataset%s/Train/" % (arg.fold)
+    valid_path = "dataset/dataset%s/Val/" % (arg.fold)
     # test_path  = data_path + "/2D/Test_FL/"
     test_path = "dataset/Test/"
     """
@@ -132,11 +132,13 @@ if __name__ == "__main__":
     elif arg.model == "unetres":
         net = UnetRes2D(1, nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "unetgcn":
-        net = UnetGCN(1, nn.InstanceNorm2d, is_pool=arg.pool)
+        net = UnetGCN(arg.feature_scale, nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "unetgcnseb":
-        net = UnetGCNSEB(1, nn.InstanceNorm2d, is_pool=arg.pool)
+        net = UnetGCNSEB(arg.feature_scale, nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "unetgcnecre":
-        net = UnetGCNECRE(1, nn.InstanceNorm2d, is_pool=arg.pool)
+        net = UnetGCNECRE(arg.feature_scale, nn.InstanceNorm2d, is_pool=arg.pool)
+    elif arg.model == "unetexfuse":
+        net = UnetExFuse(arg.feature_scale, nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "exfuse":
         resnet = resnet101(pretrained=True)
         net = ExFuse(resnet)

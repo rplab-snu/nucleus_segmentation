@@ -14,6 +14,7 @@ from models.UnetSH import UnetSH2D
 from models.UnetRes import UnetRes2D
 from models.ExFuse import ExFuse
 from models.Resnet import resnet101
+from models.UnetExFuse import UnetGCN, UnetGCNECRE, UnetGCNSEB
 
 from trainers.CNNTrainer import CNNTrainer
 
@@ -31,7 +32,7 @@ def arg_parse():
     parser.add_argument('--cpus', type=int, default="8",
                         help="Select CPU Number workers")
     parser.add_argument('--model', type=str, default='unet',
-                        choices=['fusion', "unet", "unet_sh", "unetres", "exfuse"], required=True)
+                        choices=['fusion', "unet", "unet_sh", "unetres", "exfuse", "unetgcn", "unetgcnseb", "unetgcnecre"], required=True)
     # Unet params
     parser.add_argument('--feature_scale', type=int, default=4)
     parser.add_argument('--sh_size', type=int, default=1)
@@ -130,6 +131,12 @@ if __name__ == "__main__":
         net = UnetSH2D(arg.sh_size, feature_scale=arg.feature_scale, is_pool=arg.pool)
     elif arg.model == "unetres":
         net = UnetRes2D(1, nn.InstanceNorm2d, is_pool=arg.pool)
+    elif arg.model == "unetgcn":
+        net = UnetGCN(1, nn.InstanceNorm2d, is_pool=arg.pool)
+    elif arg.model == "unetgcnseb":
+        net = UnetGCNSEB(1, nn.InstanceNorm2d, is_pool=arg.pool)
+    elif arg.model == "unetgcnecre":
+        net = UnetGCNECRE(1, nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "exfuse":
         resnet = resnet101(pretrained=True)
         net = ExFuse(resnet)

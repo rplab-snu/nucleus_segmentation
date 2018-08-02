@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from models.layers.unet_layer import UnetConv2D, UnetUpConv2D, weights_init_kaiming, ConvBNReLU
-from models.layers.ExFuseLayer import SEB, CNA, GCN, ECRE, DAP, ExFuseLevel
+from models.layers.ExFuseLayer import SEB, CNA, GCN, ECRE, DAP, UnetExFuseLevel
 
 
 class UnetGCN(nn.Module):
@@ -266,9 +266,9 @@ class UnetExFuse(nn.Module):
 
         # upsampling
         self.up_concat4 = UnetUpConv2D(filters[4], filters[3], norm, is_deconv)
-        self.level4 = ExFuseLevel(filters[3], filters[2])
-        self.level3 = ExFuseLevel(filters[2], filters[1])
-        self.level2 = ExFuseLevel(filters[1], filters[0])
+        self.level4 = UnetExFuseLevel(filters[3], filters[2])
+        self.level3 = UnetExFuseLevel(filters[2], filters[1])
+        self.level2 = UnetExFuseLevel(filters[1], filters[0])
         self.final = nn.Sequential(DAP(filters[0]), nn.Conv2d(filters[0], 1, 1))
         # initialise weights
         for m in self.modules():

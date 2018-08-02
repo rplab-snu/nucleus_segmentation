@@ -128,3 +128,19 @@ class ExFuseLevel(nn.Module):
 
         return self.upconv(level + prev_feature)
 
+# Each Step of Framework
+class UnetExFuseLevel(nn.Module):
+    def __init__(self, in_c, out_c=21, norm=nn.InstanceNorm2d):
+        super(UnetExFuseLevel, self).__init__()
+        self.seb = SEB(in_c * 2, in_c)
+        self.gcn = GCN(in_c, in_c)
+        self.upconv = nn.Sequential(nn.ConvTranspose2d(in_c, out_c, 3, 2, 1, output_padding=1),
+                                    norm(out_c),
+                                    nn.ReLU(True))
+
+    def forward(self, low_level, high_level, prev_feature):
+        level = self.seb(low_level, high_level)
+        level = self.gcn(level)
+
+        return self.upconv(level + prev_feature)
+

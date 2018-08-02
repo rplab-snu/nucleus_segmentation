@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from models.layers.unet_layer import UnetConv2D, UnetUpConv2D, weights_init_kaiming, ConvBNReLU
-from models.layer.ExFuseLayer import SEB, CNA, GCN, ECRE, DAP, ExFuseLevel
+from models.layers.ExFuseLayer import SEB, CNA, GCN, ECRE, DAP, ExFuseLevel
 
 
 class UnetGCN(nn.Module):

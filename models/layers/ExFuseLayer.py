@@ -18,9 +18,9 @@ class CNA(nn.Module):
 # Semantic Embedding Branch, Fig 4
 class SEB(nn.Module):
     def __init__(self, high_feature_c, low_feature_c,
-                 up_scale=2):
+                 norm=nn.InstancNorm2d, up_scale=2)
         super(SEB, self).__init__()
-        self.conv = CNA(high_feature_c, low_feature_c)
+        self.conv = CNA(high_feature_c, low_feature_c, norm=norm)
         self.up = nn.UpsamplingBilinear2d(scale_factor=up_scale)
 
     def forward(self, low_feature, high_feature):
@@ -33,17 +33,17 @@ class SEB(nn.Module):
 # https://github.com/ycszen/pytorch-segmentation
 # https://arxiv.org/pdf/1703.02719.pdf
 class GCN(nn.Module):
-    def __init__(self, in_c, out_c, ks=7):
+    def __init__(self, in_c, out_c, ks=7, norm=nn.InstanceNorm2d):
         super(GCN, self).__init__()
         self.conv_l1 = CNA(in_c, out_c, kernel_size=(ks, 1),
-                           padding=(ks // 2, 0))
+                           padding=(ks // 2, 0), norm=norm)
         self.conv_l2 = CNA(out_c, out_c, kernel_size=(1, ks),
-                           padding=(0, ks // 2))
+                           padding=(0, ks // 2), norm=norm))
 
         self.conv_r1 = CNA(in_c, out_c, kernel_size=(1, ks),
-                           padding=(0, ks // 2))
+                           padding=(0, ks // 2), norm=norm))
         self.conv_r2 = CNA(out_c, out_c, kernel_size=(ks, 1),
-                           padding=(ks // 2, 0))
+                           padding=(ks // 2, 0), norm=norm))
 
     def forward(self, x):
         x_l = self.conv_l1(x)
@@ -57,9 +57,9 @@ class GCN(nn.Module):
 
 # Explicit Channel Resolution Embedding
 class ECRE(nn.Module):
-    def __init__(self, in_c, up_scale=2):
+    def __init__(self, in_c, up_scale=2, norm=nn.InstanceNorm2d):
         super(ECRE, self).__init__()
-        self.ecre = nn.Sequential(CNA(in_c, in_c * up_scale * up_scale),
+        self.ecre = nn.Sequential(CNA(in_c, in_c * up_scale * up_scale, norm=norm)),
                                   nn.PixelShuffle(up_scale))
 
     def forward(self, input_):
@@ -86,10 +86,10 @@ class SS(nn.Module):
 
 # Densely Adjacent Prediction
 class DAP(nn.Module):
-    def __init__(self, in_c, k=3):
+    def __init__(self, in_c, k=3, norm=nn.InstanceNorm2d:
         super(DAP, self).__init__()
         self.k2 = k * k
-        self.conv = CNA(in_c, in_c * k * k)
+        self.conv = CNA(in_c, in_c * k * k, norm=norm)
         self.padd = nn.ZeroPad2d(k // 2)
 
     def forward(self, input_):
@@ -116,8 +116,8 @@ class DAP(nn.Module):
 class ExFuseLevel(nn.Module):
     def __init__(self, in_c, out_c=21, norm=nn.InstanceNorm2d):
         super(ExFuseLevel, self).__init__()
-        self.seb = SEB(in_c * 2, in_c)
-        self.gcn = GCN(in_c, out_c)
+        self.seb = SEB(in_c * 2, in_c, norm=norm)
+        self.gcn = GCN(in_c, out_c, norm=norm)
         self.upconv = nn.Sequential(nn.ConvTranspose2d(out_c, out_c, 3, 2, 1, output_padding=1),
                                     norm(out_c),
                                     nn.ReLU(True))
@@ -132,8 +132,8 @@ class ExFuseLevel(nn.Module):
 class UnetExFuseLevel(nn.Module):
     def __init__(self, in_c, out_c=21, norm=nn.InstanceNorm2d):
         super(UnetExFuseLevel, self).__init__()
-        self.seb = SEB(in_c * 2, in_c)
-        self.gcn = GCN(in_c, in_c)
+        self.seb = SEB(in_c * 2, in_c, norm=norm)
+        self.gcn = GCN(in_c, in_c, norm=norm)
         self.upconv = nn.Sequential(nn.ConvTranspose2d(in_c, out_c, 3, 2, 1, output_padding=1),
                                     norm(out_c),
                                     nn.ReLU(True))

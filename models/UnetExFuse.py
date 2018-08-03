@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from models.layers.unet_layer import UnetConv2D, UnetUpConv2D, weights_init_kaiming, ConvBNReLU
 from models.layers.ExFuseLayer import SEB, CNA, GCN, ECRE, DAP, UnetExFuseLevel
 
@@ -108,7 +109,7 @@ class UnetGCNSEB(nn.Module):
         self.up_concat1 = SEB(filters[1], filters[0])
 
         # final conv (without any concat)
-        self.final = nn.Conv2d(filters[0], n_classes, 1)
+        self.final = nn.Conv2d(filters[0], 1, 1)
 
         # initialise weights
         for m in self.modules():

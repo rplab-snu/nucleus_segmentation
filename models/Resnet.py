@@ -205,3 +205,11 @@ def resnet152(pretrained=False, **kwargs):
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
     return model
+
+def resnet_exfuse(pretrained=False, **kwargs):
+    """Constructs a ResNet-152 model.
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(Bottleneck, [8, 8, 9, 8], **kwargs)
+    return model

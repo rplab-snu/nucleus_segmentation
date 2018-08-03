@@ -13,7 +13,7 @@ from models.unet import Unet2D
 from models.UnetSH import UnetSH2D
 from models.UnetRes import UnetRes2D
 from models.ExFuse import ExFuse
-from models.Resnet import resnet101
+from models.Resnet import resnet_exfuse as resnet
 from models.UnetExFuse import UnetGCN, UnetGCNECRE, UnetGCNSEB, UnetExFuse
 
 from trainers.CNNTrainer import CNNTrainer
@@ -132,15 +132,15 @@ if __name__ == "__main__":
     elif arg.model == "unetres":
         net = UnetRes2D(1, nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "unetgcn":
-        net = UnetGCN(arg.feature_scale, nn.InstanceNorm2d, is_pool=arg.pool)
+        net = UnetGCN(arg.feature_scale, norm=nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "unetgcnseb":
-        net = UnetGCNSEB(arg.feature_scale, nn.InstanceNorm2d, is_pool=arg.pool)
+        net = UnetGCNSEB(arg.feature_scale, norm=nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "unetgcnecre":
-        net = UnetGCNECRE(arg.feature_scale, nn.InstanceNorm2d, is_pool=arg.pool)
+        net = UnetGCNECRE(arg.feature_scale, norm=nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "unetexfuse":
-        net = UnetExFuse(arg.feature_scale, nn.InstanceNorm2d, is_pool=arg.pool)
+        net = UnetExFuse(arg.feature_scale, norm=nn.InstanceNorm2d, is_pool=arg.pool)
     elif arg.model == "exfuse":
-        resnet = resnet101(pretrained=True)
+        resnet = resnet(pretrained=True)
         net = ExFuse(resnet)
     else:
         raise NotImplementedError("Not Implemented Model")

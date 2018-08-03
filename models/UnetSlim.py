@@ -1,36 +1,60 @@
+import torch
 import torch.nn as nn
-from models.layers.unet_layer import UnetConv2D, UnetUpConv2D, weights_init_kaiming, ConvBNReLU
+from models.layers.unet_layer import weights_init_kaiming, UnetUpConv2D
+from models.layers.ExFuseLayer import CNA, UpCNA
 import torch.nn.functional as F
 
 
-class Unet2D(nn.Module):
+class UnetUpConvSlim(nn.Module):
+    def __init__(self, in_c, out_c, norm=nn.InstanceNorm2d, is_deconv=False):
+        super(UnetUpConvSlim, self).__init__()
+        self.conv = CNA(in_c, out_c, norm=norm)
+        if is_deconv:
+            self.up = nn.ConvTranspose2d(in_c, out_c, 4, 2, 1)
+        else:
+            self.up = nn.UpsamplingBilinear2d(2)
+           
+        for m in self.children():
+            if m.__class__.__name__.find("Conv") != -1:
+                m.apply(weights_init_kaiming)
+
+    def forward(self, input1, input2):
+        output2 = self.up(input2)
+        offset = output2.size()[2] - input1.size()[2]
+        padding = [offset // 2] * 4
+        output1 = F.pad(input1, padding)
+        output = torch.cat([output1, output2], dim=1)
+        return self.conv(output)
+
+class UnetSlim(nn.Module):
 
     def __init__(self, feature_scale=4, n_classes=1,
                  is_deconv=True, norm=nn.BatchNorm2d, is_pool=True):
-        super(Unet2D, self).__init__()
+        super(UnetSlim, self).__init__()
         filters = [64, 128, 256, 512, 1024]
         filters = [x // feature_scale for x in filters]
+        print("Unet Slim filters : ", filters)
 
         # downsampling
-        self.conv1 = UnetConv2D(1, filters[0], norm)
+        self.conv1 = CNA(1, filters[0], norm=norm) 
         self.maxpool1 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[0], filters[0], norm, stride=2)
 
-        self.conv2 = UnetConv2D(filters[0], filters[1], norm)
+        self.conv2 = CNA(filters[0], filters[1], norm=norm) 
         self.maxpool2 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[1], filters[1], norm, stride=2)
 
-        self.conv3 = UnetConv2D(filters[1], filters[2], norm)
+        self.conv3 = CNA(filters[1], filters[2], norm=norm) 
         self.maxpool3 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[2], filters[2], norm, stride=2)
 
-        self.conv4 = UnetConv2D(filters[2], filters[3], norm)
+        self.conv4 = CNA(filters[2], filters[3], norm=norm) 
         self.maxpool4 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[3], filters[3], norm, stride=2)
 
-        self.center = UnetConv2D(filters[3], filters[4], norm)
+        self.center = CNA(filters[3], filters[4], norm=norm)
 
         # upsampling
-        self.up_concat4 = UnetUpConv2D(filters[4], filters[3], norm, is_deconv)
-        self.up_concat3 = UnetUpConv2D(filters[3], filters[2], norm, is_deconv)
-        self.up_concat2 = UnetUpConv2D(filters[2], filters[1], norm, is_deconv)
-        self.up_concat1 = UnetUpConv2D(filters[1], filters[0], norm, is_deconv)
+        self.up_concat4 = UnetUpConvSlim(filters[4], filters[3], norm, is_deconv)
+        self.up_concat3 = UnetUpConvSlim(filters[3], filters[2], norm, is_deconv)
+        self.up_concat2 = UnetUpConvSlim(filters[2], filters[1], norm, is_deconv)
+        self.up_concat1 = UnetUpConvSlim(filters[1], filters[0], norm, is_deconv)
 
         # final conv (without any concat)
         self.final = nn.Conv2d(filters[0], n_classes, 1)
@@ -67,13 +91,12 @@ class Unet2D(nn.Module):
 
 
 if __name__ == "__main__":
+    model = UnetSlim()
+    from torchsummary import summary
+    summary(model.cuda(), (1,448,448))
     import torch
     input2D = torch.randn([1, 1, 448, 448])
-    model = Unet2D()
     output2D = model(input2D)
 
     print("input shape : \t", input2D.shape)
     print("output shape  : \t", output2D.shape)
-
-    from torchsummary import summary
-    summary(model.cuda(), (1,448,448))

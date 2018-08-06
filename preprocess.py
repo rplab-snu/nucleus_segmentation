@@ -36,9 +36,9 @@ def image_resize(img, zoom=1):
 def random_rotate2d(input_, target_):
     angle = random.randint(10, 350)
     rotate_input  = rotate(input_, angle,
-                           reshape=True)
+                           reshape=False)
     rotate_target = rotate(target_, angle,
-                           reshape=True)
+                           reshape=False)
     return rotate_input, rotate_target
 
 

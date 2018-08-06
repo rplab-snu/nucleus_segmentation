@@ -27,7 +27,7 @@ class ExFuse(nn.Module):
         self.res5 = resnet.layer4
         self.gcn5 = GCN(2048, 21)
         self.ecre = ECRE(21)
-        
+
         self.out = nn.Sequential(UpCNA(21, 21),
                                  DAP(21),
                                  nn.MaxPool2d(2),
@@ -53,12 +53,11 @@ class ExFuse(nn.Module):
         level3 = self.gcn3(level3)
         level3 += level4
         level3 = self.upc3(level3)
-        
+
         level2 = self.seb2(res2, res3)
         level2 = self.gcn2(level2)
         level2 += level3
         level2 = self.upc2(level2)
 
-        out =  self.out(level2)
-        return out
-
+        out = self.out(level2)
+        return out, level5

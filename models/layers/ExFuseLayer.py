@@ -14,6 +14,7 @@ class CNA(nn.Module):
     def forward(self, x):
         return self.layer(x)
 
+
 # UpConv-Norm-Activation
 class UpCNA(nn.Module):
     def __init__(self, in_c, out_c, kernel_size=4, stride=2, padding=1,
@@ -24,6 +25,7 @@ class UpCNA(nn.Module):
 
     def forward(self, x):
         return self.layer(x)
+
 
 # Semantic Embedding Branch, Fig 4
 # FIXME : SEB is including all low level features
@@ -140,6 +142,7 @@ class ExFuseLevel(nn.Module):
 
         return self.upconv(level + prev_feature)
 
+
 # Each Step of Framework
 class UnetExFuseLevel(nn.Module):
     def __init__(self, in_c, out_c=21, norm=nn.InstanceNorm2d):
@@ -155,4 +158,3 @@ class UnetExFuseLevel(nn.Module):
         level = self.gcn(level)
 
         return self.upconv(level + prev_feature)
-

@@ -14,7 +14,7 @@ from models.UnetSH import UnetSH2D
 from models.UnetRes import UnetRes2D
 from models.ExFuse import ExFuse
 from models.Resnet import resnet_exfuse as resnet
-from models.UnetExFuse import UnetGCN, UnetGCNECRE, UnetGCNSEB, UnetExFuse
+from models.UnetExFuse import UnetGCN, UnetGCNECRE, UnetGCNSEB, UnetExFuse, UnetGCNECRE_v2
 from models.UnetSlim import UnetSlim
 
 from trainers.CNNTrainer import CNNTrainer
@@ -34,7 +34,10 @@ def arg_parse():
     parser.add_argument('--cpus', type=int, default="8",
                         help="Select CPU Number workers")
     parser.add_argument('--model', type=str, default='unet',
-                        choices=['fusion', "unet", "unet_sh", "unetres", "exfuse", "unetgcn", "unetgcnseb", "unetgcnecre", "unetexfuse", "unetslim"], required=True)
+                        choices=['fusion', "unet", "unet_sh", "unetres", "exfuse", 
+                                 "unetgcn", "unetgcnseb", "unetgcnecre", "unetexfuse", 
+                                 "unetgcnecre2", "unetgcnecre3"
+                                 "unetslim"], required=True)
     parser.add_argument('--norm', type=str, default='in', choices=["in", "bn"])
 
     # Unet params
@@ -148,6 +151,8 @@ if __name__ == "__main__":
         net = UnetGCNSEB(arg.feature_scale, norm=norm_layer, is_pool=arg.pool)
     elif arg.model == "unetgcnecre":
         net = UnetGCNECRE(arg.feature_scale, norm=norm_layer, is_pool=arg.pool)
+    elif arg.model == "unetgcnecre2":
+        net = UnetGCNECRE_v2(arg.feature_scale, norm=norm_layer, is_pool=arg.pool)
     elif arg.model == "unetexfuse":
         net = UnetExFuse(arg.feature_scale, norm=norm_layer, is_pool=arg.pool)
     elif arg.model == "exfuse":

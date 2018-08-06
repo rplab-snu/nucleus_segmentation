@@ -238,6 +238,77 @@ class UnetGCNECRE(nn.Module):
         return final
 
 
+class UnetGCNECRE_v2(UnetGCNECRE):
+    # Move GCN Module in forward
+    def __init__(self, feature_scale=4, n_classes=1,
+                 is_deconv=True, norm=nn.InstanceNorm2d, is_pool=True):
+        super(UnetGCNECRE_v2, self).__init__(feature_scale=feature_scale, n_classes=n_classes,
+                                             is_deconv=is_deconv, norm=norm, is_pool=is_pool)
+
+    def forward(self, inputs):
+        conv1 = self.conv1(inputs)
+        gcn1 = self.gcn1(conv1)
+        maxpool1 = self.maxpool1(conv1)
+
+        conv2 = self.conv2(maxpool1)
+        gcn2 = self.gcn2(conv2)
+        maxpool2 = self.maxpool2(conv2)
+
+        conv3 = self.conv3(maxpool2)
+        gcn3 = self.gcn3(conv3)
+        maxpool3 = self.maxpool3(conv3)
+
+        conv4 = self.conv4(maxpool3)
+        gcn4 = self.gcn4(conv4)
+        maxpool4 = self.maxpool4(conv4)
+
+        center = self.center(maxpool4)
+
+        up4 = self.up_concat4(gcn4, center)
+        up3 = self.up_concat3(gcn3, up4)
+        up2 = self.up_concat2(gcn2, up3)
+        up1 = self.up_concat1(gcn1, up2)
+
+        final = self.final(up1)
+        return final
+
+
+class UnetGCNECRE_v3(UnetGCNECRE):
+    # Add Auxiliary Supervision Loss
+    # For Exfuse trainer
+    def __init__(self, feature_scale=4, n_classes=1,
+                 is_deconv=True, norm=nn.InstanceNorm2d, is_pool=True):
+        super(UnetGCNECRE_v3, self).__init__(feature_scale=feature_scale, n_classes=n_classes,
+                                             is_deconv=is_deconv, norm=norm, is_pool=is_pool)
+
+    def forward(self, inputs):
+        conv1 = self.conv1(inputs)
+        gcn1 = self.gcn1(conv1)
+        maxpool1 = self.maxpool1(conv1)
+
+        conv2 = self.conv2(maxpool1)
+        gcn2 = self.gcn2(conv2)
+        maxpool2 = self.maxpool2(conv2)
+
+        conv3 = self.conv3(maxpool2)
+        gcn3 = self.gcn3(conv3)
+        maxpool3 = self.maxpool3(conv3)
+
+        conv4 = self.conv4(maxpool3)
+        gcn4 = self.gcn4(conv4)
+        maxpool4 = self.maxpool4(conv4)
+
+        center = self.center(maxpool4)
+
+        up4 = self.up_concat4(gcn4, center)
+        up3 = self.up_concat3(gcn3, up4)
+        up2 = self.up_concat2(gcn2, up3)
+        up1 = self.up_concat1(gcn1, up2)
+
+        final = self.final(up1)
+        return final
+
+
 class UnetExFuse(nn.Module):
 
     def __init__(self, feature_scale=4, n_classes=1,

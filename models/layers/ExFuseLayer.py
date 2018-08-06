@@ -69,7 +69,6 @@ class GCN(nn.Module):
 
 
 # Explicit Channel Resolution Embedding
-# FIXME : Add Auxiliary Supervision
 class ECRE(nn.Module):
     def __init__(self, in_c, up_scale=2, norm=nn.InstanceNorm2d):
         super(ECRE, self).__init__()

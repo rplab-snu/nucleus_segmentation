@@ -13,9 +13,9 @@ from models.layers.UnetResLayer import weights_init_kaiming
 from sklearn.metrics import f1_score, confusion_matrix, recall_score, jaccard_similarity_score, roc_curve, precision_recall_curve
 
 
-class CNNTrainer(BaseTrainer):
+class ExFuseTrainer(BaseTrainer):
     def __init__(self, arg, G, torch_device, recon_loss):
-        super(CNNTrainer, self).__init__(arg, torch_device)
+        super(ExFuseTrainer, self).__init__(arg, torch_device)
         self.recon_loss = recon_loss
 
         self.G = G
@@ -103,8 +103,12 @@ class CNNTrainer(BaseTrainer):
             for i, (input_, target_, _) in enumerate(train_loader):
                 self.G.train()
                 input_, target_ = input_.to(self.torch_device), target_.to(self.torch_device)
-                output_ = self.G(input_)
-                recon_loss = self.recon_loss(output_, target_)
+                output_, ecre = self.G(input_)
+
+                reshaped_target = F.interpolate(target_, ecre.shape[-2:], mode="bilinear")
+
+                aux_loss = self.recon_loss(ecre, reshaped_target)
+                recon_loss = self.recon_loss(output_, target) + aux_loss
 
                 self.optim.zero_grad()
                 recon_loss.backward()
@@ -121,7 +125,7 @@ class CNNTrainer(BaseTrainer):
 
     def _test_foward(self, input_, target_):
         input_ = input_.to(self.torch_device)
-        output_ = self.G(input_)
+        output_, _ = self.G(input_)
         output_ = self.sigmoid(output_).type(torch.FloatTensor).numpy()
         target_ = target_.type(torch.FloatTensor).numpy()
         input_ = input_.type(torch.FloatTensor).numpy()

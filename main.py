@@ -36,7 +36,7 @@ def arg_parse():
     parser.add_argument('--model', type=str, default='unet',
                         choices=['fusion', "unet", "unet_sh", "unetres", "exfuse", 
                                  "unetgcn", "unetgcnseb", "unetgcnecre", "unetexfuse", 
-                                 "unetgcnecre2", "unetgcnecre3"
+                                 "unetgcnecre2", "unetgcnecre3",
                                  "unetslim"], required=True)
     parser.add_argument('--norm', type=str, default='in', choices=["in", "bn"])
 

@@ -28,11 +28,10 @@ class UpCNA(nn.Module):
 
 
 # Semantic Embedding Branch, Fig 4
-# FIXME : SEB is including all low level features
-class SEB(nn.Module):
+class SEB_dw(nn.Module):
     def __init__(self, low_feature, high_feature,
                  norm=nn.InstanceNorm2d, up_scale=2):
-        super(SEB, self).__init__()
+        super(SEB_dw, self).__init__()
         self.conv = CNA(high_feature, low_feature, norm=norm)
         self.up = nn.UpsamplingBilinear2d(scale_factor=up_scale)
 
@@ -40,6 +39,27 @@ class SEB(nn.Module):
         high_feature = self.conv(high_feature)
         high_feature = self.up(high_feature)
         return low_feature * high_feature # element wise mul
+
+
+# Orignal Paper Impl
+class SEB(nn.Module):
+    def __init__(self, low_feature, high_features,
+                 norm=nn.InstanceNorm2d, up_scale=2):
+        super(SEB, self).__init__()
+        self.sebs = []
+        for c in range(len(high_features) - 1, 0, -1):
+            self.sebs.append(nn.Sequential(CNA(high_features[c], high_features[c - 1], norm=norm),
+                                           nn.UpsamplingBilinear2d(scale_factor=up_scale)))
+
+    def forward(self, low_feature, *high_features):
+        high_features = reversed(high_features)
+        
+        low_feature = self.seb[0](high_features[0]) * high_features[1]
+        for c in range(1, len(high_features)):
+            high_feature = self.sebs[c](high_features[c])
+            low_feature *= high_feature
+            
+        return low_feature  # element wise mul
 
 
 # Global Convolution Network

@@ -10,17 +10,17 @@ class ExFuse(nn.Module):
         self.conv1 = CNA(1, 64)
         self.pool1 = nn.MaxPool2d(2)
         self.res2 = resnet.layer1
-        self.seb2 = SEB(256, 512)
+        self.seb2 = SEB(256, (512, 1024, 2048))
         self.gcn2 = GCN(256, 21)
         self.upc2 = UpCNA(21, 21)
 
         self.res3 = resnet.layer2
-        self.seb3 = SEB(512, 1024)
+        self.seb3 = SEB(512, (1024, 2048))
         self.gcn3 = GCN(512, 21)
         self.upc3 = UpCNA(21, 21)
 
         self.res4 = resnet.layer3
-        self.seb4 = SEB(1024, 2048)
+        self.seb4 = SEB(1024, (2048))
         self.gcn4 = GCN(1024, 21)
         self.upc4 = UpCNA(21, 21)
 
@@ -49,12 +49,12 @@ class ExFuse(nn.Module):
         level4 += level5
         level4 = self.upc4(level4)
 
-        level3 = self.seb3(res3, res4)
+        level3 = self.seb3(res3, res4, res5)
         level3 = self.gcn3(level3)
         level3 += level4
         level3 = self.upc3(level3)
 
-        level2 = self.seb2(res2, res3)
+        level2 = self.seb2(res2, res3, res4, res5)
         level2 = self.gcn2(level2)
         level2 += level3
         level2 = self.upc2(level2)

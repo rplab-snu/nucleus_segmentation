@@ -1,4 +1,5 @@
 import utils
+import os
 from Logger import Logger
 
 class BaseTrainer:
@@ -15,9 +16,15 @@ class BaseTrainer:
         self.batch_size = arg.batch_size
         
         self.save_path = utils.get_save_dir(arg)
-        self.log_file_path = self.save_path+"/log.txt"
+        self.log_file_path = self.save_path+"/fold%s/log.txt"%(arg.fold)
 
-        self.logger = Logger(arg, self.save_path)
+        if os.path.exists(self.save_path) is False:
+            os.mkdir(self.save_path)
+
+        if os.path.exists(self.save_path + "/fold%s"%(arg.fold)) is False:
+            os.mkdir(self.save_path + "/fold%s"%(arg.fold))
+
+        self.logger = Logger(arg, self.save_path + "/fold%s"%(arg.fold))
     
     def save(self):
         raise NotImplementedError("notimplemented save method")

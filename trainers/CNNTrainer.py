@@ -21,6 +21,7 @@ class CNNTrainer(BaseTrainer):
         self.G = G
         self.lrG = arg.lrG
         self.beta = arg.beta
+        self.fold = arg.fold
         self.optim = torch.optim.Adam(self.G.parameters(), lr=arg.lrG, betas=arg.beta)
 
         self.best_metric = 0
@@ -30,20 +31,25 @@ class CNNTrainer(BaseTrainer):
         self.prev_epoch_loss = 0
 
     def save(self, epoch, filename="models"):
+        save_path = self.save_path + "/fold%s"%(self.fold)
         if os.path.exists(self.save_path) is False:
             os.mkdir(self.save_path)
+        if os.path.exists(save_path) is False:
+            os.mkdir(save_path)
+
         torch.save({"model_type": self.model_type,
                     "start_epoch": epoch + 1,
                     "network": self.G.state_dict(),
                     "optimizer": self.optim.state_dict(),
                     "best_metric": self.best_metric
-                    }, self.save_path + "/%s.pth.tar" % (filename))
+                    }, save_path + "/%s.pth.tar" % (filename))
         print("Model saved %d epoch" % (epoch))
 
     def load(self):
-        if os.path.exists(self.save_path + "/models.pth.tar") is True:
-            print("Load %s File" % (self.save_path))
-            ckpoint = torch.load(self.save_path + "/models.pth.tar")
+        save_path = self.save_path + "/fold%s"%(self.fold)
+        if os.path.exists(save_path + "/models.pth.tar") is True:
+            print("Load %s File" % (save_path))
+            ckpoint = torch.load(save_path + "/models.pth.tar")
             if ckpoint["model_type"] != self.model_type:
                 raise ValueError("Ckpoint Model Type is %s" % (ckpoint["model_type"]))
 
@@ -162,6 +168,7 @@ class CNNTrainer(BaseTrainer):
 
     def test(self, test_loader):
         print("\nStart Test")
+        self.load()
         self.G.eval()
         with torch.no_grad():
             y_true = np.array([])
@@ -183,8 +190,8 @@ class CNNTrainer(BaseTrainer):
                     f1_best = f1
                     th_best = threshold
 
-            np.save("%s/test_roc_values.npy" % (self.save_path), roc_values)
-            np.save("%s/test_pr_values.npy" % (self.save_path),  pr_values)
+            np.save("%s/fold%s/test_roc_values.npy" % (self.save_path, self.fold), roc_values)
+            np.save("%s/fold%s/test_pr_values.npy" % (self.save_path, self.fold),  pr_values)
 
             confusions, cnt = [0, 0, 0, 0], 0
             f1_sum = 0
@@ -198,7 +205,7 @@ class CNNTrainer(BaseTrainer):
                     output_b = output_np[batch_idx, 0, :, :]
                     target_f, output_f = target_b.flatten(), output_b.flatten()
 
-                    save_path = "%s/%s" % (self.save_path, f_name[batch_idx][:-4])
+                    save_path = "%s/fold%s/%s" % (self.save_path, self.fold, f_name[batch_idx][:-4])
                     input_norm = input_[batch_idx, 0, :, :]
                     input_norm = (input_norm - input_norm.min()) / (input_norm.max() - input_norm.min())
                     utils.image_save(save_path, input_norm, target_b, output_b)

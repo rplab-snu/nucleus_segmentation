@@ -13,7 +13,11 @@ warnings.filterwarnings("ignore", ".*output shape of zoom.*")
 class NSDataset(data.Dataset):
     # TODO : infer implementated
     def __init__(self, img_root, channel, sampler=None, infer=False, transform=None, torch_type="float", augmentation_rate=0.3):
-        img_paths = glob(img_root + '/*.npy')
+        if type(img_root) == list:
+            img_paths = [p for path in img_root for p in glob(path + "/*.npy")]
+        else:
+            img_paths = glob(img_root + '/*.npy')
+
         if len(img_paths) == 0:
             raise ValueError("Check data path : %s"%(img_root))
 

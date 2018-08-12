@@ -10,6 +10,7 @@ import preprocess
 from NucleusLoader import NucleusLoader
 from models.Fusionnet import Fusionnet
 from models.unet import Unet2D
+from models.unet_gn import UnetGN2D
 from models.UnetSH import UnetSH2D
 from models.UnetRes import UnetRes2D
 from models.ExFuse import ExFuse
@@ -35,6 +36,7 @@ def arg_parse():
                         help="Select CPU Number workers")
     parser.add_argument('--model', type=str, default='unet',
                         choices=['fusion', "unet", "unet_sh", "unetres", "exfuse", 
+                                 "unetgn",
                                  "unetgcn", "unetgcnseb", "unetgcnecre", "unetexfuse", 
                                  "unetgcnecre2", "unetgcnecre3",
                                  "unetslim"], required=True)
@@ -105,37 +107,27 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = arg.gpus
     torch_device = torch.device("cuda")
 
-    # data_path = "/data/00_Nuclues_segmentation/DW" + arg.fold
-
-
+    """
     # Kakao Server
     train_path = "dataset/dataset%s/Train/" % (arg.fold)
     valid_path = "dataset/dataset%s/Val/" % (arg.fold)
     # test_path  = data_path + "/2D/Test_FL/"
     test_path = "dataset/Test/"
-
     """
     # RPLab Server
-    train_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label/Train"
-    valid_path = "/data/00_Nuclues_segmentation/00_data/2D/New(50_Cells)/Only_Label/Val"
+    train_path = "/data/kbdataset/dataset%s/Train"%(arg.fold)
+    valid_path = "/data/kbdataset/dataset%s/Val"%(arg.fold)
     test_path = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL"
     # test_path = "/home/joy/project/nuclear/dataset/test"
-    """
    
     preprocess = preprocess.get_preprocess(arg.augment)
 
-    """
     train_loader = NucleusLoader(train_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
                                  torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=True, drop_last=True)
     valid_loader = NucleusLoader(valid_path, arg.batch_size, transform=preprocess, sampler=arg.sampler,
                                  torch_type=arg.dtype, cpus=arg.cpus,
                                  shuffle=False, drop_last=False)
-    """
-
-    tv_loader = NucleusLoader([train_path, valid_path], arg.batch_size, transform=preprocess, sampler=arg.sampler,
-                              torch_type=arg.dtype, cpus=arg.cpus,
-                              shuffle=False, drop_last=False)
     test_loader = NucleusLoader(test_path, 1,
                                 torch_type=arg.dtype, cpus=arg.cpus,
                                 shuffle=False, drop_last=False)
@@ -149,6 +141,8 @@ if __name__ == "__main__":
         net = Fusionnet(1, 1, arg.ngf, arg.clamp)
     elif arg.model == "unet":
         net = Unet2D(feature_scale=arg.feature_scale, is_pool=arg.pool)
+    elif arg.model == "unetgn":
+        net = UnetGN2D(feature_scale=arg.feature_scale, is_pool=arg.pool)
     elif arg.model == "unetslim":
         net = UnetSlim(feature_scale=arg.feature_scale, norm=norm_layer)
     elif arg.model == "unet_sh":
@@ -185,7 +179,6 @@ if __name__ == "__main__":
         model = CNNTrainer(arg, net, torch_device, recon_loss=recon_loss)
     if arg.test is False:
         # model.pre_train(train_loader, valid_loader)
-        # model.train(train_loader, valid_loader)
-        model.train(tv_loader, test_loader)
+        model.train(train_loader, valid_loader)
     model.test(test_loader)
     # utils.slack_alarm("zsef123", "Model %s Done"%(arg.save_dir))

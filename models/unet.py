@@ -6,31 +6,31 @@ import torch.nn.functional as F
 class Unet2D(nn.Module):
 
     def __init__(self, feature_scale=4, n_classes=1,
-                 is_deconv=True, norm=nn.BatchNorm2d, is_pool=True):
+                 is_deconv=True, norm=nn.BatchNorm2d, is_pool=True, act=nn.ReLU):
         super(Unet2D, self).__init__()
         filters = [64, 128, 256, 512, 1024]
         filters = [x // feature_scale for x in filters]
 
         # downsampling
-        self.conv1 = UnetConv2D(1, filters[0], norm)
-        self.maxpool1 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[0], filters[0], norm, stride=2)
+        self.conv1 = UnetConv2D(1, filters[0], norm, act=act)
+        self.maxpool1 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[0], filters[0], norm, stride=2, act=act)
 
-        self.conv2 = UnetConv2D(filters[0], filters[1], norm)
-        self.maxpool2 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[1], filters[1], norm, stride=2)
+        self.conv2 = UnetConv2D(filters[0], filters[1], norm, act=act)
+        self.maxpool2 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[1], filters[1], norm, stride=2, act=act)
 
-        self.conv3 = UnetConv2D(filters[1], filters[2], norm)
-        self.maxpool3 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[2], filters[2], norm, stride=2)
+        self.conv3 = UnetConv2D(filters[1], filters[2], norm, act=act)
+        self.maxpool3 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[2], filters[2], norm, stride=2, act=act)
 
-        self.conv4 = UnetConv2D(filters[2], filters[3], norm)
-        self.maxpool4 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[3], filters[3], norm, stride=2)
+        self.conv4 = UnetConv2D(filters[2], filters[3], norm, act=act)
+        self.maxpool4 = nn.MaxPool2d(kernel_size=2) if is_pool else ConvBNReLU(filters[3], filters[3], norm, stride=2, act=act)
 
-        self.center = UnetConv2D(filters[3], filters[4], norm)
+        self.center = UnetConv2D(filters[3], filters[4], norm, act=act)
 
         # upsampling
-        self.up_concat4 = UnetUpConv2D(filters[4], filters[3], norm, is_deconv)
-        self.up_concat3 = UnetUpConv2D(filters[3], filters[2], norm, is_deconv)
-        self.up_concat2 = UnetUpConv2D(filters[2], filters[1], norm, is_deconv)
-        self.up_concat1 = UnetUpConv2D(filters[1], filters[0], norm, is_deconv)
+        self.up_concat4 = UnetUpConv2D(filters[4], filters[3], norm, is_deconv, act=act)
+        self.up_concat3 = UnetUpConv2D(filters[3], filters[2], norm, is_deconv, act=act)
+        self.up_concat2 = UnetUpConv2D(filters[2], filters[1], norm, is_deconv, act=act)
+        self.up_concat1 = UnetUpConv2D(filters[1], filters[0], norm, is_deconv, act=act)
 
         # final conv (without any concat)
         self.final = nn.Conv2d(filters[0], n_classes, 1)

@@ -14,11 +14,12 @@ def weights_init_kaiming(m):
         nn.init.constant_(m.bias.data, 0.0)
 
 class ConvBNReLU(nn.Module):
-    def __init__(self, in_size, out_size, norm, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_size, out_size, norm, kernel_size=3, stride=1, padding=1, act=nn.ReLU):
         super(ConvBNReLU, self).__init__()
         self.conv1 = nn.Sequential(nn.Conv2d(in_size, out_size, kernel_size, stride, padding),
                                    norm(out_size),
-                                   nn.ReLU(inplace=True),)
+                                   nn.Softplus())
+                                   # act(inplace=True),)
         # initialise the blocks
         for m in self.children():
             m.apply(weights_init_kaiming)
@@ -27,10 +28,10 @@ class ConvBNReLU(nn.Module):
         return self.conv1(inputs)
 
 class UnetConv2D(nn.Module):
-    def __init__(self, in_size, out_size, norm, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_size, out_size, norm, kernel_size=3, stride=1, padding=1, act=nn.ReLU):
         super(UnetConv2D, self).__init__()
-        self.conv1 = ConvBNReLU(in_size, out_size, norm, kernel_size, stride, padding)
-        self.conv2 = ConvBNReLU(out_size, out_size, norm, kernel_size, 1, padding)
+        self.conv1 = ConvBNReLU(in_size, out_size, norm, kernel_size, stride, padding, act)
+        self.conv2 = ConvBNReLU(out_size, out_size, norm, kernel_size, 1, padding, act)
 
 
     def forward(self, inputs):
@@ -38,10 +39,10 @@ class UnetConv2D(nn.Module):
         return self.conv2(x)
 
 class UnetUpConv2D(nn.Module):
-    def __init__(self, in_size, out_size, norm, is_deconv=True):
+    def __init__(self, in_size, out_size, norm, is_deconv=True, act=nn.ReLU):
         super(UnetUpConv2D, self).__init__()
 
-        self.conv = UnetConv2D(in_size, out_size, norm)
+        self.conv = UnetConv2D(in_size, out_size, norm, act=act)
         if is_deconv:
             self.up = nn.ConvTranspose2d(in_size, out_size, kernel_size=4, stride=2, padding=1)
         else:

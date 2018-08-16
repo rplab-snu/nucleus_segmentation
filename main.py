@@ -41,6 +41,7 @@ def arg_parse():
                                  "unetgcnecre2", "unetgcnecre3",
                                  "unetslim"], required=True)
     parser.add_argument('--norm', type=str, default='in', choices=["in", "bn"])
+    parser.add_argument('--act', type=str, default='relu', choices=["relu", "elu", "leaky", "prelu"])
 
     # Unet params
     parser.add_argument('--feature_scale', type=int, default=4)
@@ -71,7 +72,7 @@ def arg_parse():
                         choices=['weight', ''],
                         help='The setting sampler')
 
-    parser.add_argument('--epoch', type=int, default=500, help='The number of epochs')
+    parser.add_argument('--epoch', type=int, default=150, help='The number of epochs')
     parser.add_argument('--batch_size', type=int, default=32, help='The size of batch')
     parser.add_argument('--test', action="store_true", help='The size of batch')
 
@@ -137,10 +138,19 @@ if __name__ == "__main__":
     elif arg.norm == "in":
         norm_layer = nn.InstanceNorm2d
 
+    if arg.act == "relu":
+        act = nn.ReLU
+    elif arg.act == "elu":
+        act = nn.ELU
+    elif arg.act == "leaky":
+        act = nn.LeakyReLU
+    elif arg.act == "prelu":
+        act = nn.PReLU
+
     if arg.model == "fusion":
         net = Fusionnet(1, 1, arg.ngf, arg.clamp)
     elif arg.model == "unet":
-        net = Unet2D(feature_scale=arg.feature_scale, is_pool=arg.pool)
+        net = Unet2D(feature_scale=arg.feature_scale, is_pool=arg.pool, act=act)
     elif arg.model == "unetgn":
         net = UnetGN2D(feature_scale=arg.feature_scale, is_pool=arg.pool)
     elif arg.model == "unetslim":
@@ -180,5 +190,5 @@ if __name__ == "__main__":
     if arg.test is False:
         # model.pre_train(train_loader, valid_loader)
         model.train(train_loader, valid_loader)
-    model.test(test_loader)
+    model.test(test_loader, valid_loader)
     # utils.slack_alarm("zsef123", "Model %s Done"%(arg.save_dir))

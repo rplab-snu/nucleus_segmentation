@@ -25,7 +25,6 @@ class CNNTrainer(BaseTrainer):
         self.optim = torch.optim.Adam(self.G.parameters(), lr=arg.lrG, betas=arg.beta)
 
         self.best_metric = 0
-        self.best_th = 0
         self.sigmoid = nn.Sigmoid().to(self.torch_device)
 
         self.load()
@@ -43,7 +42,6 @@ class CNNTrainer(BaseTrainer):
                     "network": self.G.state_dict(),
                     "optimizer": self.optim.state_dict(),
                     "best_metric": self.best_metric,
-                    "best_th":self.best_th,
                     }, save_path + "/%s.pth.tar" % (filename))
         print("Model saved %d epoch" % (epoch))
 
@@ -59,7 +57,6 @@ class CNNTrainer(BaseTrainer):
             self.optim.load_state_dict(ckpoint['optimizer'])
             self.start_epoch = ckpoint['start_epoch']
             self.best_metric = ckpoint["best_metric"]
-            self.best_ch = ckpoint["best_th"]
             print("Load Model Type : %s, epoch : %d" % (ckpoint["model_type"], self.start_epoch))
         else:
             print("Load Failed, not exists file")
@@ -144,12 +141,11 @@ class CNNTrainer(BaseTrainer):
             # F1(per dataset) , JSS, Dice(per image)
             dice, jss, cnt = 0, 0, 1
 
-            f1_best, th_best = self.get_best_th(val_loader)
             for i, (input_, target_, _) in enumerate(val_loader):
                 _, output_, target_ = self._test_foward(input_, target_)
 
                 target_np = utils.slice_threshold(target_, 0.5)
-                output_np = utils.slice_threshold(output_, th_best)
+                output_np = utils.slice_threshold(output_, 0.5)
                 for b in range(target_.shape[0]):
                     target_f, output_f = target_np[b].flatten(), output_np[b].flatten()
 
@@ -164,16 +160,16 @@ class CNNTrainer(BaseTrainer):
             tn, fp, fn, tp = confusions_sum
             precision, recall = tp / (tp + fp), tp / (fp + fn) 
             f05 = (5 * precision * recall) / (precision + (4 * recall))
+            f2 = (5 * precision * recall) / ((4 * precision) + recall)
             jss /= cnt
             dice /= cnt
 
             metric = f05 + jss + dice
             if metric > self.best_metric:
                 self.best_metric = metric
-                self.best_th = th_best
                 self.save(epoch)
 
-            self.logger.write("[Val] epoch:%d f05:%f jss:%f dice:%f" % (epoch, f05, jss, dice))
+            self.logger.write("[Val] epoch:%d f2:%f jss:%f dice:%f" % (epoch, f2, jss, dice))
 
     def get_best_th(self, loader):
         y_true = np.array([])
@@ -196,25 +192,13 @@ class CNNTrainer(BaseTrainer):
                 th_best = threshold
         return f_best, th_best
 
-    def test(self, test_loader):
+    def test(self, test_loader, val_loader):
         print("\nStart Test")
         self.load()
         self.G.eval()
         with torch.no_grad():
             y_true = np.array([])
             y_pred = np.array([])
-            for i, (input_, target_, _) in enumerate(test_loader):
-                input_, output_, target_ = self._test_foward(input_, target_)
-                target_np = utils.slice_threshold(target_, 0.5)
-
-                y_true = np.concatenate([y_true, target_np.flatten()], axis=0)
-                y_pred = np.concatenate([y_pred, output_.flatten()],   axis=0)
-
-            roc_values = np.array(roc_curve(y_true, y_pred))
-            pr_values = np.array(precision_recall_curve(y_true, y_pred))
-
-            np.save("%s/fold%s/test_roc_values.npy" % (self.save_path, self.fold), roc_values)
-            np.save("%s/fold%s/test_pr_values.npy" % (self.save_path, self.fold),  pr_values)
 
             confusions, cnt = [0, 0, 0, 0], 0
             f1_sum = 0
@@ -222,7 +206,11 @@ class CNNTrainer(BaseTrainer):
                 input_, output_, target_ = self._test_foward(input_, target_)
 
                 target_np = utils.slice_threshold(target_, 0.5)
-                output_np = utils.slice_threshold(output_, self.best_th)
+                output_np = utils.slice_threshold(output_, 0.5)
+
+                y_true = np.concatenate([y_true, target_np.flatten()], axis=0)
+                y_pred = np.concatenate([y_pred, output_.flatten()],   axis=0)
+
                 for batch_idx in range(0, input_.shape[0]):
                     target_b = target_np[batch_idx, 0, :, :]
                     output_b = output_np[batch_idx, 0, :, :]
@@ -241,9 +229,17 @@ class CNNTrainer(BaseTrainer):
                     f1_sum += scores[-2] # image per f1
                     cnt += 1
 
+            roc_values = np.array(roc_curve(y_true, y_pred))
+            pr_values = np.array(precision_recall_curve(y_true, y_pred))
+
+            np.save("%s/fold%s/test_roc_values.npy" % (self.save_path, self.fold), roc_values)
+            np.save("%s/fold%s/test_pr_values.npy" % (self.save_path, self.fold),  pr_values)
+
             tn, fp, fn, tp = confusions
+            self.logger.will_write("[Save] tn:%d fp:%d fn:%d tp:%d"%(tn, fp, fn, tp))
             precision, recall = tp / (tp + fp), tp / (fp + fn) 
             f05 = (5 * precision * recall) / (precision + (4 * recall))
+            f2 = (5 * precision * recall) / ((4 * precision) + recall)
             scores = utils.get_roc_pr(*confusions)
-        self.logger.write("Best Threshold:%f sen:%f spec:%f prec:%f rec:%f f1:%f jss:%f dice:%f f05:%f" % (self.th_best, *scores, f1_sum / float(cnt), f05))
+        self.logger.write("Best Threshold:%f sen:%f spec:%f prec:%f rec:%f f1:%f jss:%f dice:%f f05:%f f2:%f" % (0.5, *scores, f1_sum / float(cnt), f05, f2))
         print("End Test\n")

@@ -18,8 +18,7 @@ class ConvBNReLU(nn.Module):
         super(ConvBNReLU, self).__init__()
         self.conv1 = nn.Sequential(nn.Conv2d(in_size, out_size, kernel_size, stride, padding),
                                    norm(out_size),
-                                   nn.Softplus())
-                                   # act(inplace=True),)
+                                   act(inplace=True),)
         # initialise the blocks
         for m in self.children():
             m.apply(weights_init_kaiming)

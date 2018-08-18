@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 from .BaseTrainer import BaseTrainer
 from models.layers.UnetResLayer import weights_init_kaiming
+from loss import dice_loss
 
 from sklearn.metrics import f1_score, confusion_matrix, recall_score, jaccard_similarity_score, roc_curve, precision_recall_curve
 
@@ -110,7 +111,7 @@ class CNNTrainer(BaseTrainer):
                 self.G.train()
                 input_, target_ = input_.to(self.torch_device), target_.to(self.torch_device)
                 output_ = self.G(input_)
-                recon_loss = self.recon_loss(output_, target_)
+                recon_loss = self.recon_loss(output_, target_) + 0.5 * dice_loss(output_, target_)
 
                 self.optim.zero_grad()
                 recon_loss.backward()

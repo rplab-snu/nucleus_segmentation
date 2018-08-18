@@ -108,7 +108,6 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = arg.gpus
     torch_device = torch.device("cuda")
 
-    """
     # Kakao Server
     train_path = "dataset/dataset%s/Train/" % (arg.fold)
     valid_path = "dataset/dataset%s/Val/" % (arg.fold)
@@ -120,6 +119,7 @@ if __name__ == "__main__":
     valid_path = "/data/kbdataset/dataset%s/Val"%(arg.fold)
     test_path = "/data/00_Nuclues_segmentation/00_data/2D/Test_FL"
     # test_path = "/home/joy/project/nuclear/dataset/test"
+    """
    
     preprocess = preprocess.get_preprocess(arg.augment)
 

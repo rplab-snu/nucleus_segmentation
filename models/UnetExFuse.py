@@ -165,7 +165,7 @@ class UnetUpECRE(nn.Module):
         padding = [offset // 2] * 4
         output1 = F.pad(input1, padding)
         output = torch.cat([output1, output2], 1)
-        return self.conv(output)
+        return self.conv(output), output2
 
 
 class UnetGCNECRE(nn.Module):
@@ -203,6 +203,12 @@ class UnetGCNECRE(nn.Module):
         # final conv (without any concat)
         self.final = nn.Conv2d(filters[0], n_classes, 1)
 
+        # For aux loss
+        self.ecre4 = ConvBNReLU(filters[4], 1, norm, stride=2)
+        self.ecre3 = ConvBNReLU(filters[3], 1, norm, stride=2)
+        self.ecre2 = ConvBNReLU(filters[2], 1, norm, stride=2)
+        self.ecre1 = ConvBNReLU(filters[1], 1, norm, stride=2)
+
         # initialise weights
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -229,13 +235,13 @@ class UnetGCNECRE(nn.Module):
 
         center = self.center(maxpool4)
 
-        up4 = self.up_concat4(conv4, center)
-        up3 = self.up_concat3(conv3, up4)
-        up2 = self.up_concat2(conv2, up3)
-        up1 = self.up_concat1(conv1, up2)
+        up4, ecre4 = self.up_concat4(conv4, center)
+        up3, ecre3 = self.up_concat3(conv3, up4)
+        up2, ecre2 = self.up_concat2(conv2, up3)
+        up1, ecre1 = self.up_concat1(conv1, up2)
 
         final = self.final(up1)
-        return final
+        return final # , self.ecre4(ecre4), self.ecre3(ecre3), self.ecre2(ecre2), self.ecre1(ecre1) 
 
 
 class UnetGCNECRE_v2(UnetGCNECRE):

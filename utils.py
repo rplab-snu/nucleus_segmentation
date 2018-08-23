@@ -3,6 +3,8 @@ import os
 import numpy as np
 import scipy
 from sklearn.metrics import confusion_matrix
+import torch.nn.functional as F
+import torch
 
 def get_save_dir(arg):
     save_path = "./outs/" + arg.save_dir
@@ -20,6 +22,16 @@ def RVD(output, target):
     score = (output_sum - target_sum) / target_sum
     # Higher is Better
     return -score
+
+def torch_downsample(img, scale):
+    # Create grid
+    out_size = img.shape[-1] // scale 
+    x = torch.linspace(-1, 1, out_size).view(-1, 1).repeat(1, out_size)
+    y = torch.linspace(-1, 1, out_size).repeat(out_size, 1)
+    grid = torch.cat((x.unsqueeze(2), y.unsqueeze(2)), 2).cuda()
+    # grid.unsqueeze_(0)
+
+    return F.grid_sample(img, grid)
 
 def get_roc_pr(tn, fp, fn, tp):
     sensitivity = tp / (tp + fn) if (tp + fn) != 0 else 1

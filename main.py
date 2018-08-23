@@ -19,7 +19,7 @@ from models.UnetExFuse import UnetGCN, UnetGCNECRE, UnetGCNSEB, UnetExFuse, Unet
 from models.UnetSlim import UnetSlim
 
 from trainers.CNNTrainer import CNNTrainer
-from trainers.ExFuseTrainer import ExFuseTrainer
+from trainers.ECRETrainer import ECRETrainer
 
 from loss import FocalLoss, TverskyLoss
 
@@ -183,10 +183,8 @@ if __name__ == "__main__":
     elif arg.loss == "MSE":
         recon_loss = nn.MSELoss()
         
-    if arg.model == "exfuse":
-        model = ExFuseTrainer(arg, net, torch_device, recon_loss=recon_loss)
-    else:
-        model = CNNTrainer(arg, net, torch_device, recon_loss=recon_loss)
+    model = CNNTrainer(arg, net, torch_device, recon_loss=recon_loss)
+
     if arg.test is False:
         # model.pre_train(train_loader, valid_loader)
         model.train(train_loader, valid_loader)

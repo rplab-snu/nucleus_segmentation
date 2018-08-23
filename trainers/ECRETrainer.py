@@ -7,17 +7,18 @@ import numpy as np
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from .BaseTrainer import BaseTrainer
 from models.layers.UnetResLayer import weights_init_kaiming
-from utils import torch_downsample
 from loss import dice_loss
 
-from sklearn.metrics import f1_score, confusion_matrix, recall_score, jaccard_similarity_score, roc_curve, precision_recall_curve, roc_auc_score, auc
+from sklearn.metrics import auc, roc_auc_score, f1_score, confusion_matrix, recall_score, jaccard_similarity_score, roc_curve, precision_recall_curve
+from utils import torch_downsample
 
 
-class CNNTrainer(BaseTrainer):
+class ECRETrainer(BaseTrainer):
     def __init__(self, arg, G, torch_device, recon_loss):
-        super(CNNTrainer, self).__init__(arg, torch_device)
+        super(ECRETrainer, self).__init__(arg, torch_device)
         self.recon_loss = recon_loss
 
         self.G = G
@@ -75,9 +76,13 @@ class CNNTrainer(BaseTrainer):
             for i, (input_, target_, _) in enumerate(train_loader):
                 self.G.train()
                 input_, target_ = input_.to(self.torch_device), target_.to(self.torch_device)
-                output_ = self.G(input_)
+                output_, ecre4, ecre3, ecre2, ecre1 = self.G(input_)
 
-                recon_loss = self.recon_loss(output_, target_) # + 0.5 * dice_loss(output_, target_)
+                recon_loss  = self.recon_loss(ecre4, F.interpolate(target_, scale_factor=1/16, mode="bilinear"))
+                recon_loss += self.recon_loss(ecre3, F.interpolate(target_, scale_factor=1/8, mode="bilinear"))
+                recon_loss += self.recon_loss(ecre2, F.interpolate(target_, scale_factor=1/4, mode="bilinear"))
+                recon_loss += self.recon_loss(ecre1, F.interpolate(target_, scale_factor=1/2, mode="bilinear"))
+                recon_loss += self.recon_loss(output_, target_)
 
                 self.optim.zero_grad()
                 recon_loss.backward()
@@ -94,7 +99,7 @@ class CNNTrainer(BaseTrainer):
 
     def _test_foward(self, input_, target_):
         input_ = input_.to(self.torch_device)
-        output_ = self.G(input_)
+        output_, *_ = self.G(input_)
         output_ = self.sigmoid(output_).type(torch.FloatTensor).numpy()
         target_ = target_.type(torch.FloatTensor).numpy()
         input_ = input_.type(torch.FloatTensor).numpy()
@@ -211,5 +216,5 @@ class CNNTrainer(BaseTrainer):
             roc_auc = roc_auc_score(y_true, y_pred)
             pr_auc = auc(pr_values[0], pr_values[1], reorder=True)
 
-        self.logger.write("Best Threshold:%f sen:%f spec:%f prec:%f rec:%f f1:%f jss:%f dice:%f f05:%f f2:%f roc:%f pr:%f" % (0.5, *scores, f1_sum / float(cnt), f05, f2, roc_auc, pr_auc))
+        self.logger.write("Best Threshold:%f sen:%f spec:%f prec:%f rec:%f f1:%f jss:%f dice:%f f05:%f f2:%f roc_auc:%f pr_auc:%f" % (0.5, *scores, f1_sum / float(cnt), f05, f2, roc_auc, pr_auc))
         print("End Test\n")
